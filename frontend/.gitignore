@@ -1,0 +1,17 @@
+# ── Dependencies ──────────────────────────────────────────────
+node_modules/
+
+# ── Build output ──────────────────────────────────────────────
+dist/
+build/
+
+# ── Environment / secrets ─────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ── Editor / OS files ─────────────────────────────────────────
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
