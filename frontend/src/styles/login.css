@@ -1,0 +1,313 @@
+/* Login / Sign Up card – Platinum Mist palette */
+
+.login-page {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.login-card {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  max-width: 660px;
+  height: 520px;
+  border-radius: 32px;
+  /* Platinum Mist silver gradient – the "blank" inactive half */
+  background: linear-gradient(145deg, #7B7F85 0%, #C1C4C8 45%, #7B7F85 100%);
+  box-shadow: 0 25px 50px -12px rgba(43, 46, 51, 0.4),
+    0 0 0 1px rgba(123, 127, 133, 0.35);
+}
+
+/* ── Single sliding dark panel ── */
+.login-card-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(160deg, #2B2E33 0%, #1E2126 100%);
+  transition: transform 0.65s cubic-bezier(0.77, 0, 0.175, 1);
+  will-change: transform;
+  z-index: 1;
+}
+
+/* unused second panel */
+.login-card-bg-2 {
+  display: none;
+}
+
+/* signin → dark LEFT */
+.login-card-bg.signin {
+  transform: translateX(0);
+}
+
+/* signup → dark slides to RIGHT */
+.login-card-bg.signup {
+  transform: translateX(100%);
+}
+
+/* ─────────────────────────────────────────────
+   FORM PANELS
+   Both forms overlay the dark half when active.
+   All text must be light for visibility.
+   ───────────────────────────────────────────── */
+.login-form-panel {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  display: grid;
+  place-items: center;
+}
+
+/* Signup panel sits on the right half */
+.login-form-panel.signup {
+  translate: 100% 0;
+}
+
+/* ── Hide inactive panel completely ── */
+.login-form-panel.signin:not(.active),
+.login-form-panel.signup:not(.active) {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.login-form-panel form {
+  display: grid;
+  gap: 9px;
+  opacity: 0;
+  width: 260px;
+  transition: opacity 0.3s, translate 0.3s;
+}
+
+.login-form-panel.signin form {
+  translate: -40px 0;
+}
+
+.login-form-panel.signup form {
+  translate: 40px 0;
+}
+
+.login-form-panel.signin.active form,
+.login-form-panel.signup.active form {
+  opacity: 1;
+  translate: 0;
+  transition: opacity 0.35s 0.45s, translate 0.35s 0.45s;
+}
+
+/* ── Headings ── */
+.login-card .login-form-panel h2 {
+  margin: 0 0 8px 0;
+  font-family: var(--font-display, 'Playfair Display', Georgia, serif);
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #ffffff !important;
+  text-align: center;
+}
+
+/* ── Labels ── */
+.login-card .login-form-panel .form-group label,
+.login-card .login-form-panel label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(245, 246, 247, 0.9) !important;
+}
+
+.login-form-panel .form-group {
+  margin-bottom: 0;
+}
+
+/* ── Inputs – frosted glass on dark ── */
+.login-card .login-form-panel .form-control {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.25) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.login-card .login-form-panel .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.42) !important;
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.42) !important;
+}
+
+.login-card .login-form-panel .form-control:-webkit-autofill,
+.login-card .login-form-panel .form-control:-webkit-autofill:hover,
+.login-card .login-form-panel .form-control:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #1E2126 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #fff;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.login-card .login-form-panel .form-control:focus {
+  outline: none;
+  border-color: #C1C4C8 !important;
+  box-shadow: 0 0 0 3px rgba(193, 196, 200, 0.25) !important;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ── Toggle button ── */
+.login-card .login-form-panel .btn-toggle {
+  margin-top: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  background: transparent !important;
+  color: #ffffff !important;
+}
+
+.login-card .login-form-panel .btn-toggle:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ── Submit button – silver gradient, dark text ── */
+.login-card .login-form-panel .btn-submit {
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none !important;
+  background: linear-gradient(135deg, #C1C4C8 0%, #7B7F85 100%) !important;
+  color: #2B2E33 !important;
+  -webkit-text-fill-color: #2B2E33 !important;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 10px rgba(43, 46, 51, 0.35);
+}
+
+.login-card .login-form-panel .btn-submit:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F5F6F7 0%, #C1C4C8 100%) !important;
+  box-shadow: 0 4px 18px rgba(43, 46, 51, 0.4);
+  transform: translateY(-1px);
+}
+
+.login-card .login-form-panel .btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-card .login-form-panel .btn-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Messages ── */
+.login-card .login-form-panel .form-error {
+  font-size: 0.8rem;
+  color: #fca5a5 !important;
+  margin-top: -4px;
+  font-weight: 500;
+}
+
+.login-card .login-form-panel .form-success {
+  font-size: 0.8rem;
+  color: #86efac !important;
+  margin-top: -4px;
+  font-weight: 600;
+}
+
+/* "Forgot password?" link */
+.btn-forgot-link {
+  background: none !important;
+  border: none !important;
+  padding: 0;
+  margin-top: -4px;
+  font-size: 0.8rem;
+  color: rgba(193, 196, 200, 0.95) !important;
+  cursor: pointer;
+  text-align: right;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s;
+}
+
+.btn-forgot-link:hover {
+  color: #F5F6F7 !important;
+}
+
+/* ─────────────────────────────────────────────
+   RESPONSIVE
+   ───────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .login-card {
+    max-width: 100%;
+    height: auto;
+    min-height: 500px;
+    border-radius: 24px;
+  }
+
+  .login-card-bg {
+    width: 100%;
+    height: 100%;
+    transform: translateX(0) !important;
+  }
+
+  .login-form-panel {
+    width: 100%;
+    padding: 40px 24px 28px;
+  }
+
+  .login-form-panel.signup {
+    translate: 0 0;
+  }
+
+  .login-form-panel form {
+    translate: none !important;
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .login-form-panel.signin:not(.active),
+  .login-form-panel.signup:not(.active) {
+    pointer-events: none;
+    visibility: hidden;
+    opacity: 0;
+  }
+}
+
+/* ─────────────────────────────────────────────
+   FORGOT / RESET PASSWORD
+   ───────────────────────────────────────────── */
+.forgot-card {
+  max-width: 420px;
+  height: auto;
+  min-height: 420px;
+}
+
+.forgot-panel {
+  width: 100%;
+  align-items: center;
+}
+
+.forgot-panel form {
+  width: 300px;
+}
+
+.forgot-hint {
+  font-size: 0.82rem;
+  color: rgba(245, 246, 247, 0.75);
+  margin: -4px 0 4px;
+  line-height: 1.45;
+  text-align: center;
+}
