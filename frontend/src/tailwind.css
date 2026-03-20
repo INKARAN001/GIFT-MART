@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .material-symbols-outlined {
+    font-family: 'Material Symbols Outlined';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: normal;
+    white-space: nowrap;
+  }
+}
+
+@layer components {
+  .layered-text {
+    text-shadow: 2px 2px 0px rgba(183, 110, 121, 0.3), 4px 4px 0px rgba(0, 0, 0, 0.1);
+  }
+  .category-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  /* UI/UX overlay & trending badges */
+  .overlay-badge {
+    @apply absolute top-3 left-3 z-10 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    color: #1a1a2e;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  }
+  .overlay-badge-trending { background: linear-gradient(135deg, #b76e79 0%, #9e5a64 100%); color: #fff; }
+  .overlay-badge-new { background: linear-gradient(135deg, #2d5a27 0%, #1e3d1a 100%); color: #fff; }
+  .overlay-badge-bestseller { background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%); color: #fff; }
+  .overlay-badge-popular { background: linear-gradient(135deg, #5c4a6e 0%, #3d2f4a 100%); color: #fff; }
+  .overlay-hero-label {
+    @apply absolute top-6 left-6 md:top-8 md:left-8 z-10 px-4 py-2 rounded-full text-sm font-bold uppercase tracking-widest;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    color: #1a1a2e;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  }
+  .text-gradient-primary {
+    background: linear-gradient(135deg, #b76e79 0%, #9e5a64 50%, #7d4850 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .section-label {
+    @apply inline-block text-xs font-bold uppercase tracking-[0.2em] mb-2;
+    color: #b76e79;
+  }
+}

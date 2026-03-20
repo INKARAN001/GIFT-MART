@@ -23,7 +23,7 @@
   align-items: center;
   font-size: 32px;
   font-weight: bold;
-  color: #ccc;
+  color: #7B7F85;
   opacity: 0;
   transition: opacity 0.3s ease, color 0.3s ease, font-size 0.3s ease, text-shadow 0.3s ease;
 }
@@ -33,9 +33,9 @@
 }
 
 .letter-position.active {
-  color: #000;
+  color: #F5F6F7;
   font-size: 40px;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 0 14px rgba(245, 246, 247, 0.7);
 }
 
 /* Logo wrapper: exact center of .clock (400x400) */

@@ -16,11 +16,24 @@ public interface ProductRepository extends MongoRepository<Product, String> {
     // get active products filtered by category
     List<Product> findByCategoryAndActiveTrue(String category, Pageable pageable);
 
+    // keyword search in name (active only)
+    List<Product> findByNameContainingIgnoreCaseAndActiveTrue(String keyword, Pageable pageable);
+
+    // keyword + category combined search (active only)
+    List<Product> findByCategoryAndNameContainingIgnoreCaseAndActiveTrue(
+            String category, String keyword, Pageable pageable);
+
     // count active products
     long countByActiveTrue();
 
     // count active products in a category
     long countByCategoryAndActiveTrue(String category);
+
+    // count keyword matches
+    long countByNameContainingIgnoreCaseAndActiveTrue(String keyword);
+
+    // count keyword + category matches
+    long countByCategoryAndNameContainingIgnoreCaseAndActiveTrue(String category, String keyword);
 
     // get all unique category names using mongodb aggregation
     @Aggregation(pipeline = {

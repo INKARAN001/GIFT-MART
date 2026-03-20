@@ -17,13 +17,16 @@ public class AdminController {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
     private final ReviewRepository reviewRepository;
+    private final CategoryRepository categoryRepository;
 
     public AdminController(UserRepository userRepository,
                            ProductRepository productRepository,
-                           ReviewRepository reviewRepository) {
+                           ReviewRepository reviewRepository,
+                           CategoryRepository categoryRepository) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.reviewRepository = reviewRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     // check if user is admin, throw error if not
@@ -83,6 +86,64 @@ public class AdminController {
         if (!userRepository.existsById(id)) return ResponseEntity.notFound().build();
         userRepository.deleteById(id);
         return ResponseEntity.ok(Map.of("message", "User deleted"));
+    }
+
+    // ── CATEGORIES ─────────────────────────────────────────────────────────
+
+    // get all categories (public access allowed – no auth check)
+    @GetMapping("/categories")
+    public ResponseEntity<List<Category>> getAllCategories() {
+        return ResponseEntity.ok(categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name")));
+    }
+
+    // create a new category
+    @PostMapping("/categories")
+    public ResponseEntity<?> createCategory(@AuthenticationPrincipal User user,
+                                            @RequestBody Category category) {
+        ensureAdmin(user);
+        if (category.getName() == null || category.getName().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Category name is required"));
+        }
+        if (categoryRepository.existsByName(category.getName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Category already exists"));
+        }
+        return ResponseEntity.status(201).body(categoryRepository.save(category));
+    }
+
+    // update a category
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<?> updateCategory(@AuthenticationPrincipal User user,
+                                            @PathVariable String id,
+                                            @RequestBody Category updated) {
+        ensureAdmin(user);
+        return categoryRepository.findById(id)
+                .map(cat -> {
+                    if (updated.getName() != null && !updated.getName().isBlank()) {
+                        // check for duplicate name (only if name changed)
+                        if (!cat.getName().equals(updated.getName())
+                                && categoryRepository.existsByName(updated.getName())) {
+                            throw new org.springframework.web.server.ResponseStatusException(
+                                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                                    "Category name already exists");
+                        }
+                        cat.setName(updated.getName());
+                    }
+                    if (updated.getDescription() != null) {
+                        cat.setDescription(updated.getDescription());
+                    }
+                    return ResponseEntity.ok(categoryRepository.save(cat));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // delete a category
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<?> deleteCategory(@AuthenticationPrincipal User user,
+                                             @PathVariable String id) {
+        ensureAdmin(user);
+        if (!categoryRepository.existsById(id)) return ResponseEntity.notFound().build();
+        categoryRepository.deleteById(id);
+        return ResponseEntity.ok(Map.of("message", "Category deleted"));
     }
 
     // ── PRODUCTS ───────────────────────────────────────────────────────────

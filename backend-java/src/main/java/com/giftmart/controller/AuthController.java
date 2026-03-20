@@ -23,10 +23,25 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // register a new user
+    // register a new user — sends verification code; no token until verify-email
     @PostMapping("/register")
-    public ResponseEntity<AuthResponse> register(@Valid @RequestBody AuthRequest req) {
+    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody AuthRequest req) {
         return ResponseEntity.status(201).body(authService.register(req));
+    }
+
+    // verify email with code sent on register — returns token and user
+    @PostMapping("/verify-email")
+    public ResponseEntity<AuthResponse> verifyEmail(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String code = body.get("code");
+        return ResponseEntity.ok(authService.verifyEmail(email, code));
+    }
+
+    // resend verification code (e.g. user didn't receive email)
+    @PostMapping("/resend-verification-code")
+    public ResponseEntity<Map<String, String>> resendVerificationCode(@RequestBody Map<String, String> body) {
+        authService.resendVerificationCode(body.get("email"));
+        return ResponseEntity.ok(Map.of("message", "Verification code sent. Check your email."));
     }
 
     // login with email and password

@@ -31,12 +31,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // these urls are public - anyone can access
                         .requestMatchers("/api/auth/login", "/api/auth/register",
+                                         "/api/auth/verify-email", "/api/auth/resend-verification-code",
                                          "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/product/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll() // product images are public
+                        .requestMatchers("/api/newsletter/**").permitAll() // send-code, verify (no login required)
                         // admin urls - only admin can access
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // everything else needs login

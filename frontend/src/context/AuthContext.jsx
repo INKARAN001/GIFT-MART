@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
     return data; // return so Login page can check role for admin redirect
   };
 
-  // register - sends name, email, password, phone to backend which saves to MongoDB
+  // register - creates account and sends verification code; no token until verifyEmail
   const register = async (name, email, password, phone) => {
     const res = await fetch(`${API}/auth/register`, {
       method: 'POST',
@@ -63,6 +63,25 @@ export function AuthProvider({ children }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || data.errors?.[0]?.msg || 'Registration failed');
+    if (data.requiresVerification) {
+      return data; // caller shows verify step; no token yet
+    }
+    if (data.token) {
+      localStorage.setItem('token', data.token);
+      setUser(data.user);
+    }
+    return data;
+  };
+
+  // verify email with code sent on register — returns token and user, then we're logged in
+  const verifyEmail = async (email, code) => {
+    const res = await fetch(`${API}/auth/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim().replace(/\s/g, '') })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Verification failed');
     localStorage.setItem('token', data.token);
     setUser(data.user);
     return data;
@@ -74,7 +93,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, fetchWithAuth }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyEmail, logout, fetchWithAuth }}>
       {children}
     </AuthContext.Provider>
   );

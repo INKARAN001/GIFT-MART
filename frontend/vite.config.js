@@ -3,28 +3,38 @@ import fs from 'fs';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// PHOTOS folder at project root: C:\Users\karan\gift-mart\PHOTOS
 const projectRoot = path.resolve(__dirname, '..');
-const photosDir = path.join(projectRoot, 'PHOTOS');
-
+const publicPhotosDir = path.join(__dirname, 'public', 'photos');
 const mime = (ext) => ({ jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp' }[ext] || 'application/octet-stream');
 
 export default defineConfig({
   plugins: [
     react(),
-    // Serve PHOTOS folder from project root at /PHOTOS/
     {
-      name: 'serve-photos',
+      name: 'serve-photos-with-spaces',
       configureServer(server) {
-        server.middlewares.use('/PHOTOS', (req, res, next) => {
-          const filePath = path.resolve(photosDir, req.url === '/' ? '' : req.url);
-          const relative = path.relative(photosDir, filePath);
-          if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(filePath)) return next();
-          const stat = fs.statSync(filePath);
-          if (stat.isDirectory()) return next();
-          const ext = path.extname(filePath).slice(1).toLowerCase();
-          res.setHeader('Content-Type', mime(ext));
-          fs.createReadStream(filePath).pipe(res);
+        server.middlewares.use('/photos', (req, res, next) => {
+          const originalUrl = req.originalUrl ?? req.url;
+          try {
+            const raw = (req.url === '/' || req.url === '') ? '' : req.url.replace(/^\//, '').split('?')[0];
+            const subPath = decodeURIComponent(raw);
+            const filePath = path.resolve(publicPhotosDir, subPath);
+            const relative = path.relative(publicPhotosDir, filePath);
+            if (relative.startsWith('..') || path.isAbsolute(relative) || !fs.existsSync(filePath)) {
+              req.url = originalUrl;
+              return next();
+            }
+            const stat = fs.statSync(filePath);
+            if (stat.isDirectory()) {
+              req.url = originalUrl;
+              return next();
+            }
+            res.setHeader('Content-Type', mime(path.extname(filePath).slice(1).toLowerCase()));
+            fs.createReadStream(filePath).pipe(res);
+          } catch (_) {
+            req.url = originalUrl;
+            next();
+          }
         });
       }
     }

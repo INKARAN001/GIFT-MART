@@ -31,6 +31,9 @@ public class User {
     private Date updatedAt;
     private String resetToken;       // password reset token (null if none)
     private Date resetTokenExpiry;   // when the token expires
+    private Boolean emailVerified;   // null or true = verified (backward compat), false = must verify
+    private String verificationCode; // 6-digit code sent on register
+    private Date verificationCodeExpiry;
 
     public User() {
         this.createdAt = new Date();
@@ -186,5 +189,34 @@ public class User {
 
     public void setResetTokenExpiry(Date resetTokenExpiry) {
         this.resetTokenExpiry = resetTokenExpiry;
+    }
+
+    public Boolean getEmailVerified() {
+        return emailVerified;
+    }
+
+    /** true if verified or field missing (existing users before email verification was added) */
+    public boolean isEmailVerified() {
+        return emailVerified == null || Boolean.TRUE.equals(emailVerified);
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public void setVerificationCode(String verificationCode) {
+        this.verificationCode = verificationCode;
+    }
+
+    public Date getVerificationCodeExpiry() {
+        return verificationCodeExpiry;
+    }
+
+    public void setVerificationCodeExpiry(Date verificationCodeExpiry) {
+        this.verificationCodeExpiry = verificationCodeExpiry;
     }
 }
