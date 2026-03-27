@@ -1,0 +1,278 @@
+/* ── Gift Box Gallery Lightbox ─────────────────────────────────────── */
+
+/* Overlay / backdrop */
+.gb-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 5, 0.92);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: gbOverlayIn 0.28s ease;
+}
+
+@keyframes gbOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ── Header bar ─────────────────────────────────────────────────────── */
+.gb-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(180deg, rgba(10, 8, 5, 0.85) 0%, transparent 100%);
+}
+
+.gb-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #d4af37;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.gb-counter {
+    font-size: 0.82rem;
+    color: rgba(255, 255, 255, 0.55);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+.gb-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #fff;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    line-height: 1;
+}
+
+.gb-close:hover {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #d4af37;
+    color: #d4af37;
+    transform: scale(1.08);
+}
+
+/* ── Main image area ─────────────────────────────────────────────────── */
+.gb-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    width: 100%;
+    max-width: 900px;
+    flex: 1;
+    padding: 4.5rem 0 1rem;
+}
+
+.gb-img-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 0;
+}
+
+.gb-img {
+    max-width: 100%;
+    max-height: calc(100vh - 240px);
+    border-radius: 12px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.2);
+    object-fit: contain;
+    animation: gbImgIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+    display: block;
+}
+
+@keyframes gbImgIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Arrow buttons */
+.gb-arrow {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.gb-arrow:hover {
+    background: rgba(212, 175, 55, 0.2);
+    border-color: #d4af37;
+    color: #d4af37;
+    transform: scale(1.08);
+}
+
+.gb-arrow:active {
+    transform: scale(0.97);
+}
+
+/* ── Thumbnail strip ──────────────────────────────────────────────────── */
+.gb-thumbs {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    padding: 0.75rem 1rem;
+    overflow-x: auto;
+    max-width: 900px;
+    width: 100%;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(212, 175, 55, 0.4) transparent;
+}
+
+.gb-thumbs::-webkit-scrollbar {
+    height: 4px;
+}
+
+.gb-thumbs::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.gb-thumbs::-webkit-scrollbar-thumb {
+    background: rgba(212, 175, 55, 0.4);
+    border-radius: 2px;
+}
+
+.gb-thumb {
+    width: 68px;
+    height: 68px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.22s ease;
+    flex-shrink: 0;
+}
+
+.gb-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.gb-thumb:hover img {
+    transform: scale(1.08);
+}
+
+.gb-thumb.active {
+    border-color: #d4af37;
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.35);
+}
+
+.gb-thumb:not(.active) {
+    opacity: 0.55;
+    filter: brightness(0.8);
+}
+
+.gb-thumb:not(.active):hover {
+    opacity: 0.85;
+    filter: brightness(1);
+}
+
+/* ── Footer action ────────────────────────────────────────────────────── */
+.gb-footer {
+    padding: 0.5rem 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.gb-shop-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #d4af37 0%, #b8860b 100%);
+    color: #1e1e1e;
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 16px rgba(184, 134, 11, 0.35);
+}
+
+.gb-shop-btn:hover {
+    background: linear-gradient(135deg, #e8c547 0%, #d4af37 100%);
+    box-shadow: 0 8px 24px rgba(212, 175, 55, 0.45);
+    transform: translateY(-2px);
+    color: #1e1e1e;
+    text-decoration: none;
+}
+
+.gb-hint {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.35);
+    letter-spacing: 0.02em;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .gb-arrow {
+        width: 38px;
+        height: 38px;
+        font-size: 1.1rem;
+    }
+
+    .gb-thumb {
+        width: 54px;
+        height: 54px;
+    }
+
+    .gb-title {
+        font-size: 1rem;
+    }
+}
