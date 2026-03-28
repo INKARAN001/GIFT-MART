@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import api from '../../api/api';
-import '../../styles/admin-panel.css'; // importing luxury styles
+import { useAuth } from '../context/AuthContext';
+import api from '../api/api';
+import '../styles/admin-panel.css'; // importing luxury styles
 
 const API = '/api';
 
