@@ -1,0 +1,11 @@
+# Copy this file to application-local.properties and fill in your Gmail details.
+# application-local.properties is in .gitignore so your password is never committed.
+#
+# To send verification codes via Gmail:
+# 1. Turn on 2-Step Verification: https://myaccount.google.com/security
+# 2. Create an App Password: https://myaccount.google.com/apppasswords
+#    - Select app: Mail, Device: Other (e.g. "Gift Mart"), then Generate
+#    - Use the 16-character password below (no spaces)
+#
+spring.mail.username=yourname@gmail.com
+spring.mail.password=your-16-char-app-password
