@@ -1,0 +1,128 @@
+/* ─── Section wrapper ─────────────────────────────────────── */
+.gift-categories-section {
+  padding: 60px 0 70px;
+  background: linear-gradient(180deg, #fdf8ed 0%, #f8f0dc 40%, #f5ebd0 70%, #f0e6cc 100%);
+  overflow: hidden;
+}
+
+.categories-title {
+  font-size: 38px;
+  font-weight: 800;
+  color: #1e1e1e;
+  text-align: center;
+  margin-bottom: 36px;
+  font-family: 'Playfair Display', 'Georgia', serif;
+}
+
+/* ─── Swiper wrapper ─────────────────────────────────────── */
+.swiper-container-h {
+  width: 100%;
+}
+
+.products-swiper {
+  width: 100%;
+  padding: 20px 0 30px !important;
+}
+
+/* ─── Each slide ─────────────────────────────────────────── */
+.products-swiper .swiper-slide {
+  height: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  opacity: 0.55;
+  transform: scale(0.88);
+  transition: transform 0.4s ease, opacity 0.4s ease,
+    box-shadow 0.4s ease;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* center (active) slide pops forward */
+.products-swiper .swiper-slide-active {
+  opacity: 1;
+  transform: scale(1);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25),
+    0 0 0 2px rgba(201, 162, 39, 0.45);
+}
+
+/* ─── Clickable link fills the slide ────────────────────── */
+.swiper-slide-link {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  overflow: hidden;
+}
+
+.swiper-slide-link img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.5s ease;
+  display: block;
+}
+
+.swiper-slide-link:hover img {
+  transform: scale(1.07);
+}
+
+/* ─── Overlay label ──────────────────────────────────────── */
+.swiper-slide-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 40%, rgba(10, 10, 10, 0.75) 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 20px 16px;
+  gap: 5px;
+}
+
+.swiper-slide-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: 'Playfair Display', Georgia, serif;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.swiper-slide-cta {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e8c547;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: all 0.35s ease;
+}
+
+.swiper-slide-active .swiper-slide-cta,
+.swiper-slide-link:hover .swiper-slide-cta {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── Responsive ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .products-swiper .swiper-slide {
+    height: 240px;
+  }
+
+  .categories-title {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .products-swiper .swiper-slide {
+    height: 200px;
+  }
+
+  .categories-title {
+    font-size: 24px;
+  }
+}

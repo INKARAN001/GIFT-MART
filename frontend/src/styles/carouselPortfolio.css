@@ -1,0 +1,307 @@
+/* carouselPortfolio.css */
+
+.portfolio-page-wrapper {
+  background: radial-gradient(circle at center, #ffffff 0%, #e8ecef 100%);
+  min-height: 100vh;
+  padding-top: 100px;
+  overflow: hidden;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+}
+
+.portfolio-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.portfolio-title {
+  font-size: 3rem;
+  font-weight: 300;
+  color: #2c3e50;
+  letter-spacing: 2px;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.portfolio-categories {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.portfolio-category-btn {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  position: relative;
+  padding-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color 0.3s ease;
+}
+
+.portfolio-category-btn:hover {
+  color: #2c3e50;
+}
+
+.portfolio-category-btn.active {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.portfolio-category-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #2c3e50;
+  transition: all 0.3s ease;
+}
+
+.coverflow-container {
+  position: relative;
+  height: 500px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  perspective: 1000px;
+}
+
+.coverflow-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.6);
+  border: none;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+.coverflow-nav-btn:hover {
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.coverflow-nav-btn.prev {
+  left: 30px;
+}
+
+.coverflow-nav-btn.next {
+  right: 30px;
+}
+
+.coverflow-card {
+  position: absolute;
+  width: 320px;
+  height: 420px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+  transition: all 0.6s cubic-bezier(0.25, 1.5, 0.5, 1);
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.coverflow-card:hover {
+  box-shadow: 0 20px 45px rgba(0,0,0,0.2);
+}
+
+.coverflow-img-wrapper {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.coverflow-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.coverflow-card:hover .coverflow-img {
+  transform: scale(1.05);
+}
+
+.coverflow-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: 30px 20px 20px;
+  color: #fff;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.coverflow-card:hover .coverflow-label, .coverflow-card.center-card .coverflow-label {
+  opacity: 1;
+}
+
+.coverflow-label h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.4rem;
+  font-weight: 500;
+}
+
+/* Portfolio Overlay (Modal) */
+.portfolio-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+.portfolio-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.portfolio-overlay-content {
+  display: flex;
+  background: #fff;
+  width: 90%;
+  max-width: 1000px;
+  height: 80vh;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.15);
+  border-radius: 20px;
+  overflow: hidden;
+  position: relative;
+  transform: translateY(50px);
+  transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.portfolio-overlay.open .portfolio-overlay-content {
+  transform: translateY(0);
+}
+
+.portfolio-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #f1f2f6;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.3s ease;
+}
+
+.portfolio-close-btn:hover {
+  background: #e0e0e0;
+}
+
+.portfolio-overlay-img-col {
+  flex: 1;
+  height: 100%;
+}
+
+.portfolio-overlay-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portfolio-overlay-info {
+  flex: 1;
+  padding: 60px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.portfolio-overlay-cat {
+  font-size: 0.9rem;
+  color: #7f8c8d;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+
+.portfolio-overlay-title {
+  font-size: 2.5rem;
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-weight: 300;
+}
+
+.portfolio-overlay-price {
+  font-size: 1.8rem;
+  color: #27ae60;
+  font-weight: 600;
+  margin-bottom: 30px;
+}
+
+.portfolio-overlay-desc {
+  font-size: 1.1rem;
+  color: #576574;
+  line-height: 1.6;
+  margin-bottom: 40px;
+  flex-grow: 1;
+}
+
+.portfolio-overlay-buy {
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  padding: 15px 30px;
+  font-size: 1.1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.portfolio-overlay-buy:hover {
+  background: #1a252f;
+  transform: translateY(-2px);
+}
+
+.portfolio-empty {
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 1.2rem;
+  margin-top: 50px;
+}
