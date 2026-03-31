@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function NavbarNew() {
   const { user, logout } = useAuth();
+  const { itemCount } = useCart();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -50,10 +52,28 @@ export default function NavbarNew() {
           <div className="flex items-center gap-2">
             <Link to="/cart" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full relative transition-colors text-slate-700 dark:text-slate-300" aria-label="Cart">
               <span className="material-symbols-outlined">shopping_bag</span>
-              <span className="absolute top-1 right-1 size-4 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold">0</span>
+              {itemCount > 0 && (
+                <span className="absolute top-1 right-1 min-w-4 h-4 px-0.5 bg-primary text-white text-[10px] flex items-center justify-center rounded-full font-bold">{itemCount > 99 ? '99+' : itemCount}</span>
+              )}
             </Link>
             {user ? (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link to="/wishlist" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title="Wishlist" aria-label="Wishlist">
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: '"FILL" 0' }}>favorite</span>
+                </Link>
+                <Link to="/reminders" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title="Reminders" aria-label="Reminders">
+                  <span className="material-symbols-outlined">notifications</span>
+                </Link>
+                {user.role === 'admin' && (
+                  <Link
+                    to="/admin"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-primary dark:text-primary"
+                    title="Admin panel"
+                    aria-label="Admin panel"
+                  >
+                    <span className="material-symbols-outlined">admin_panel_settings</span>
+                  </Link>
+                )}
                 <Link to="/profile" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title={user.name || user.email}>
                   <span className="material-symbols-outlined">person</span>
                 </Link>
