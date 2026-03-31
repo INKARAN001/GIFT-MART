@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import api from '../api/api';
-import '../styles/admin-panel.css'; // importing luxury styles
+import { useAuth } from '../../context/AuthContext';
+import api from '../../api/api';
+import InventorySection from './InventorySection';
+import '../../styles/admin-panel.css'; // importing luxury styles
 
 const API = '/api';
 
@@ -16,7 +17,7 @@ function Dashboard({ stats }) {
                         Welcome back, <span className="text-accent-blue">Admin!</span>
                     </h2>
                     <p className="hero-text">
-                        Here's an overview of your store's performance. Keep track of users, inventory, and reviews all from one centralized hub. Let's keep the momentum going!
+                        Here's an overview of your store's performance. Keep track of users, products, and reviews all from one centralized hub. Let's keep the momentum going!
                     </p>
                     <div className="hero-actions">
                         <button className="btn-primary" onClick={() => window.location.reload()}>Refresh Data</button>
@@ -59,7 +60,7 @@ function Dashboard({ stats }) {
                             <h3 className="stat-value">{stats.categories ?? '—'}</h3>
                         </div>
                         <div className="stat-icon pink">
-                            <span className="material-symbols-outlined">label</span>
+                            <span className="material-symbols-outlined">category</span>
                         </div>
                     </div>
                 </div>
@@ -170,7 +171,9 @@ function Users({ fetchWithAuth }) {
 /* ─── CATEGORIES ────────────────────────────────────────────── */
 function Categories() {
     const [categories, setCategories] = useState([]);
-    const [form, setForm] = useState({ name: '', description: '' });
+    const [form, setForm] = useState({
+        name: '', description: '', slug: '', image: '', tagline: '', overlay: '', sortOrder: 0
+    });
     const [editingId, setEditingId] = useState(null);
     const [showForm, setShowForm] = useState(false);
     const [categoryError, setCategoryError] = useState('');
@@ -184,16 +187,25 @@ function Categories() {
 
     useEffect(() => { load(); }, [load]);
 
-    const resetForm = () => { setForm({ name: '', description: '' }); setEditingId(null); setShowForm(false); setCategoryError(''); };
+    const resetForm = () => {
+        setForm({ name: '', description: '', slug: '', image: '', tagline: '', overlay: '', sortOrder: 0 });
+        setEditingId(null);
+        setShowForm(false);
+        setCategoryError('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setCategoryError('');
         try {
+            const payload = {
+                ...form,
+                sortOrder: form.sortOrder === '' ? 0 : Number(form.sortOrder)
+            };
             if (editingId) {
-                await api.put(`/admin/categories/${editingId}`, form);
+                await api.put(`/admin/categories/${editingId}`, payload);
             } else {
-                await api.post('/admin/categories', form);
+                await api.post('/admin/categories', payload);
             }
             resetForm();
             load();
@@ -204,27 +216,38 @@ function Categories() {
     };
 
     const handleEdit = (cat) => {
-        setForm({ name: cat.name, description: cat.description || '' });
+        setForm({
+            name: cat.name || '',
+            description: cat.description || '',
+            slug: cat.slug || '',
+            image: cat.image || '',
+            tagline: cat.tagline || '',
+            overlay: cat.overlay || '',
+            sortOrder: cat.sortOrder != null ? cat.sortOrder : 0
+        });
         setEditingId(cat.id || cat._id);
         setShowForm(true);
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this category?')) return;
+        if (!window.confirm('Delete this category? Products linked to it must be reassigned first.')) return;
         try {
             await api.delete(`/admin/categories/${id}`);
             load();
-        } catch { alert('Delete failed'); }
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message || 'Delete failed';
+            alert(msg);
+        }
     };
 
     return (
         <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 className="section-title" style={{ marginBottom: 0 }}>
-                    <span className="material-symbols-outlined" style={{ color: '#ff007f' }}>label</span> Labels
+                    <span className="material-symbols-outlined" style={{ color: '#ff007f' }}>category</span> Categories
                 </h2>
                 <button onClick={() => { resetForm(); setShowForm(s => !s); }} className="btn-primary" style={{ padding: '0.5rem 1rem' }}>
-                    {showForm ? 'Cancel' : '+ Add Label'}
+                    {showForm ? 'Cancel' : '+ Add Category'}
                 </button>
             </div>
 
@@ -236,26 +259,47 @@ function Categories() {
                         </div>
                     )}
                     <div className="form-group">
-                        <label className="admin-label">Label Name *</label>
+                        <label className="admin-label">Category name *</label>
                         <input className="admin-input" value={form.name} onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setCategoryError(''); }} required placeholder="e.g. Floral" />
                     </div>
                     <div className="form-group">
                         <label className="admin-label">Description</label>
                         <textarea className="admin-textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Short description…" />
                     </div>
-                    <button type="submit" className="btn-primary" style={{ width: 'fit-content' }}>{editingId ? 'Update Label ' : 'Create Label'}</button>
+                    <div className="form-group">
+                        <label className="admin-label">URL slug *</label>
+                        <input className="admin-input" value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="e.g. flash-cards (auto from name if blank on create)" />
+                    </div>
+                    <div className="form-group">
+                        <label className="admin-label">Hero image URL</label>
+                        <input className="admin-input" value={form.image} onChange={e => setForm(f => ({ ...f, image: e.target.value }))} placeholder="https://… (optional — home page uses default if empty)" />
+                    </div>
+                    <div className="form-group">
+                        <label className="admin-label">Tagline</label>
+                        <input className="admin-input" value={form.tagline} onChange={e => setForm(f => ({ ...f, tagline: e.target.value }))} placeholder="Shown on home & category page" />
+                    </div>
+                    <div className="form-group">
+                        <label className="admin-label">Badge overlay</label>
+                        <input className="admin-input" value={form.overlay} onChange={e => setForm(f => ({ ...f, overlay: e.target.value }))} placeholder="e.g. Trending, New" />
+                    </div>
+                    <div className="form-group">
+                        <label className="admin-label">Sort order</label>
+                        <input className="admin-input" type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value === '' ? '' : parseInt(e.target.value, 10) }))} placeholder="0 = first" />
+                    </div>
+                    <button type="submit" className="btn-primary" style={{ width: 'fit-content' }}>{editingId ? 'Update Category' : 'Create Category'}</button>
                 </form>
             )}
 
             <div className="table-container">
                 <div className="table-header">
-                    <h3>All Labels</h3>
+                    <h3>All categories</h3>
                 </div>
                 {categories.length === 0 ? <p style={{ color: '#94a3b8', padding: '1.5rem 2rem' }}>No categories yet.</p> : (
                     <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Name</th>
+                                <th>Slug</th>
                                 <th>Description</th>
                                 <th>Actions</th>
                             </tr>
@@ -264,185 +308,12 @@ function Categories() {
                             {categories.map(cat => (
                                 <tr key={cat.id || cat._id}>
                                     <td><span className="item-badge badge-pink">{cat.name}</span></td>
+                                    <td style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{cat.slug || '—'}</td>
                                     <td style={{ color: '#94a3b8', fontSize: '0.875rem' }}>{cat.description || '—'}</td>
                                     <td>
                                         <div className="action-buttons">
                                             <button onClick={() => handleEdit(cat)} className="btn-action edit"><span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span></button>
                                             <button onClick={() => handleDelete(cat.id || cat._id)} className="btn-action delete"><span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
-        </div>
-    );
-}
-
-/* ─── PRODUCTS ──────────────────────────────────────────────── */
-const emptyProduct = { name: '', description: '', category: '', price: '', stock: '', imageUrl: '' };
-
-function Products({ fetchWithAuth }) {
-    const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [form, setForm] = useState(emptyProduct);
-    const [editId, setEditId] = useState(null);
-    const [showForm, setShowForm] = useState(false);
-
-    const loadCategories = useCallback(async () => {
-        try {
-            const res = await api.get('/admin/categories');
-            setCategories(res.data);
-            if (res.data.length > 0) setForm(f => ({ ...f, category: f.category || res.data[0].name }));
-        } catch { /* ignore */ }
-    }, []);
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const r = await fetch(`${API}/products?limit=100`);
-            if (r.ok) { const d = await r.json(); setProducts(d.products || []); }
-        } catch { /* ignore */ }
-        setLoading(false);
-    }, []);
-
-    useEffect(() => { load(); loadCategories(); }, [load, loadCategories]);
-
-    const save = async (e) => {
-        e.preventDefault();
-        const method = editId ? 'PUT' : 'POST';
-        const url = editId ? `${API}/admin/products/${editId}` : `${API}/admin/products`;
-        const r = await fetchWithAuth(url, { method, body: JSON.stringify({ ...form, price: +form.price, stock: +form.stock }) });
-        if (r.ok) { setShowForm(false); setEditId(null); setForm(emptyProduct); load(); }
-        else { alert('Failed.'); }
-    };
-
-    const startEdit = (p) => {
-        setForm({ name: p.name, description: p.description || '', category: p.category, price: p.price, stock: p.stock, imageUrl: p.imageUrl || '' });
-        setEditId(p._id || p.id); setShowForm(true);
-    };
-
-    const del = async (id) => {
-        if (!window.confirm('Delete this product?')) return;
-        const r = await fetchWithAuth(`${API}/admin/products/${id}`, { method: 'DELETE' });
-        if (r.ok) { load(); } else alert('Delete failed.');
-    };
-
-    return (
-        <div style={{ width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h2 className="section-title" style={{ marginBottom: 0 }}>
-                    <span className="material-symbols-outlined" style={{ color: '#39ff14' }}>inventory_2</span> Inventory
-                </h2>
-                <button onClick={() => { setForm(emptyProduct); setEditId(null); setShowForm(s => !s); }} className="btn-primary" style={{ padding: '0.5rem 1rem' }}>
-                    {showForm ? 'Cancel' : '+ Add Product'}
-                </button>
-            </div>
-
-            {showForm && (
-                <form className="admin-form" style={{ gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' }} onSubmit={save}>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label className="admin-label">Product Name *</label>
-                        <input className="admin-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
-                    </div>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label className="admin-label">Product Image</label>
-                        <input className="admin-input" type="file" accept="image/*" onChange={async e => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const fd = new FormData();
-                            fd.append('file', file);
-                            try {
-                                const token = localStorage.getItem('token');
-                                const res = await fetch(`${API}/admin/upload`, {
-                                    method: 'POST',
-                                    headers: { ...(token && { Authorization: `Bearer ${token}` }) },
-                                    body: fd
-                                });
-                                if (res.ok) {
-                                    const data = await res.json();
-                                    setForm(f => ({ ...f, imageUrl: data.url }));
-                                } else {
-                                    alert('Image upload failed.');
-                                    e.target.value = null;
-                                }
-                            } catch (err) {
-                                alert('Upload error.');
-                                e.target.value = null;
-                            }
-                        }} />
-                        {form.imageUrl && (
-                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <img src={form.imageUrl} alt="preview" style={{ maxHeight: '60px', borderRadius: '4px' }} />
-                                <button type="button" onClick={() => setForm(f => ({ ...f, imageUrl: '' }))} className="btn-action delete" style={{ padding: '0.2rem' }}><span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete</span></button>
-                            </div>
-                        )}
-                    </div>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label className="admin-label">Description</label>
-                        <textarea className="admin-textarea" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                        <label className="admin-label">Category *</label>
-                        <select className="admin-select" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} required>
-                            <option value="">Select category</option>
-                            {['boquet', 'gift box', 'flashcards', 'frames'].map(c => <option key={c} value={c}>{c}</option>)}
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label className="admin-label">Price (LKR) *</label>
-                        <input className="admin-input" type="number" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} required />
-                    </div>
-                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                        <label className="admin-label">Stock *</label>
-                        <input className="admin-input" type="number" min="0" value={form.stock} onChange={e => setForm(f => ({ ...f, stock: e.target.value }))} required />
-                    </div>
-                    <button type="submit" className="btn-primary" style={{ gridColumn: '1 / -1', width: 'fit-content' }}>{editId ? 'Update Product' : 'Create Product'}</button>
-                </form>
-            )}
-
-            <div className="table-container">
-                <div className="table-header">
-                    <h3>All Products</h3>
-                </div>
-                {loading ? <p style={{ color: '#94a3b8', padding: '1.5rem 2rem' }}>Loading products…</p> : products.length === 0 ? (
-                    <p style={{ color: '#94a3b8', padding: '1.5rem 2rem' }}>No products found.</p>
-                ) : (
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Product</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Stock</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.map(p => (
-                                <tr key={p._id || p.id}>
-                                    <td>
-                                        <div className="item-flex">
-                                            <div className="item-image" style={{ overflow: 'hidden' }}>
-                                                {p.imageUrl ? <img src={p.imageUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span className="material-symbols-outlined">image</span>}
-                                            </div>
-                                            <p className="item-text">{p.name}</p>
-                                        </div>
-                                    </td>
-                                    <td><span className="item-badge badge-blue">{p.category}</span></td>
-                                    <td style={{ color: '#f1f5f9', fontWeight: '700' }}>LKR {p.price?.toLocaleString()}</td>
-                                    <td>
-                                        <span className={`item-badge ${p.stock < 10 ? 'badge-pink' : 'badge-green'}`}>
-                                            {p.stock}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="action-buttons">
-                                            <button onClick={() => startEdit(p)} className="btn-action edit"><span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>edit</span></button>
-                                            <button onClick={() => del(p._id || p.id)} className="btn-action delete"><span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }}>delete</span></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -482,7 +353,7 @@ function Reviews({ fetchWithAuth }) {
     return (
         <div style={{ width: '100%' }}>
             <h2 className="section-title">
-                <span className="material-symbols-outlined" style={{ color: '#b76e79' }}>reviews</span> Reviews
+                <span className="material-symbols-outlined" style={{ color: '#5F9EA0' }}>reviews</span> Reviews
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1.5rem' }}>
@@ -513,6 +384,41 @@ export default function AdminPanel() {
     const navigate = useNavigate();
     const [tab, setTab] = useState('dashboard');
     const [stats, setStats] = useState({});
+    const [lowStockProducts, setLowStockProducts] = useState([]);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const notifWrapRef = useRef(null);
+
+    const loadLowStockProducts = useCallback(async () => {
+        try {
+            const r = await fetchWithAuth(`${API}/admin/products`);
+            if (!r.ok) return;
+            const all = await r.json();
+            const list = Array.isArray(all) ? all : [];
+            const low = list
+                .filter((p) => (p.stock ?? 0) < 10)
+                .sort((a, b) => (a.stock ?? 0) - (b.stock ?? 0));
+            setLowStockProducts(low);
+        } catch { /* ignore */ }
+    }, [fetchWithAuth]);
+
+    useEffect(() => {
+        loadLowStockProducts();
+    }, [loadLowStockProducts]);
+
+    useEffect(() => {
+        if (tab === 'products') loadLowStockProducts();
+    }, [tab, loadLowStockProducts]);
+
+    useEffect(() => {
+        if (!notifOpen) return;
+        const close = (e) => {
+            if (notifWrapRef.current && !notifWrapRef.current.contains(e.target)) {
+                setNotifOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', close);
+        return () => document.removeEventListener('mousedown', close);
+    }, [notifOpen]);
 
     /* load summary stats for dashboard */
     useEffect(() => {
@@ -540,8 +446,8 @@ export default function AdminPanel() {
     const navItems = [
         { id: 'dashboard', label: 'Dashboard', icon: 'dashboard' },
         { id: 'users', label: 'Users', icon: 'group' },
-        { id: 'products', label: 'Inventory', icon: 'inventory_2' },
-        { id: 'categories', label: 'Labels', icon: 'label' },
+        { id: 'products', label: 'Products', icon: 'inventory_2' },
+        { id: 'categories', label: 'Categories', icon: 'category' },
         { id: 'reviews', label: 'Reviews', icon: 'reviews' }
     ];
 
@@ -604,13 +510,70 @@ export default function AdminPanel() {
                         <input type="text" className="search-input" placeholder="Search analytics, users, or products..." />
                     </div>
                     <div className="header-actions">
-                        <button className="header-btn">
-                            <span className="material-symbols-outlined">notifications</span>
-                            <span className="header-dot"></span>
-                        </button>
-                        <button className="header-btn">
-                            <span className="material-symbols-outlined">chat_bubble</span>
-                        </button>
+                        <div className="admin-notif-wrap" ref={notifWrapRef}>
+                            <button
+                                type="button"
+                                className="header-btn"
+                                aria-expanded={notifOpen}
+                                aria-haspopup="true"
+                                aria-label="Low stock alerts"
+                                title="Products with stock under 10"
+                                onClick={() => setNotifOpen((o) => !o)}
+                            >
+                                <span className="material-symbols-outlined">notifications</span>
+                                {lowStockProducts.length > 0 && (
+                                    <span className="header-notif-badge" aria-hidden>
+                                        {lowStockProducts.length > 99 ? '99+' : lowStockProducts.length}
+                                    </span>
+                                )}
+                            </button>
+                            {notifOpen && (
+                                <div className="admin-notif-dropdown" role="dialog" aria-label="Low stock products">
+                                    <div className="admin-notif-dropdown-head">
+                                        <span className="material-symbols-outlined" style={{ fontSize: '1.125rem', color: '#5F9EA0' }}>warning</span>
+                                        <span>Stock under 10</span>
+                                    </div>
+                                    {lowStockProducts.length === 0 ? (
+                                        <p className="admin-notif-empty">No products below 10 units in stock.</p>
+                                    ) : (
+                                        <ul className="admin-notif-list">
+                                            {lowStockProducts.map((p) => {
+                                                const id = p._id || p.id;
+                                                const st = p.stock ?? 0;
+                                                return (
+                                                    <li key={id}>
+                                                        <button
+                                                            type="button"
+                                                            className="admin-notif-row"
+                                                            onClick={() => {
+                                                                setTab('products');
+                                                                setNotifOpen(false);
+                                                            }}
+                                                        >
+                                                            <span className="admin-notif-name">{p.name || '—'}</span>
+                                                            <span className="admin-notif-meta">
+                                                                {p.category && <span className="admin-notif-cat">{p.category}</span>}
+                                                                <span className={`admin-notif-stock ${st === 0 ? 'is-zero' : ''}`}>{st} left</span>
+                                                            </span>
+                                                        </button>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    )}
+                                    <button
+                                        type="button"
+                                        className="admin-notif-footer-btn"
+                                        onClick={() => {
+                                            setTab('products');
+                                            setNotifOpen(false);
+                                        }}
+                                    >
+                                        Open Products
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </header>
 
@@ -618,7 +581,7 @@ export default function AdminPanel() {
                     {tab === 'dashboard' && <Dashboard stats={stats} />}
                     {tab === 'users' && <Users fetchWithAuth={fetchWithAuth} />}
                     {tab === 'categories' && <Categories />}
-                    {tab === 'products' && <Products fetchWithAuth={fetchWithAuth} />}
+                    {tab === 'products' && <InventorySection fetchWithAuth={fetchWithAuth} />}
                     {tab === 'reviews' && <Reviews fetchWithAuth={fetchWithAuth} />}
                 </div>
             </main>
