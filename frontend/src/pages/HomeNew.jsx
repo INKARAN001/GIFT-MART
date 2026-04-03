@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import flashCardsImg from '../Flash cards/1.jpeg';
 import boquetImg from '../boquet/1.jpeg';
 import framesImg from '../frames/1.jpeg';
 import giftBoxImg from '../gift box/1.jpeg';
+import CategoryCarousel from '../components/home/CategoryCarousel';
 
-const CATEGORIES = [
-  { name: 'Flash Cards', slug: 'flash-cards', image: flashCardsImg, tagline: 'Aesthetic', overlay: 'Trending' },
-  { name: 'Bouquets', slug: 'bouquets', image: boquetImg, tagline: 'Hand-picked Elegance', overlay: 'New' },
-  { name: 'Frames', slug: 'frames', image: framesImg, tagline: 'Preserve Your Memories', overlay: 'Bestseller' },
-  { name: 'Gift Boxes', slug: 'gift-boxes', image: giftBoxImg, tagline: 'Pre-curated Perfection', overlay: 'Popular' },
+const FALLBACK_IMAGES = [flashCardsImg, boquetImg, framesImg, giftBoxImg];
+
+/** Used only if /api/categories is empty or fails — slugs must match Category documents. */
+const STATIC_CATEGORY_FALLBACK = [
+  { name: 'Flash Cards', slug: 'flash-cards', tagline: 'Aesthetic', overlay: 'Trending' },
+  { name: 'Bouquet', slug: 'bouquets', tagline: 'Hand-picked Elegance', overlay: 'New' },
+  { name: 'Frames', slug: 'frames', tagline: 'Preserve Your Memories', overlay: 'Bestseller' },
+  { name: 'Gift Box', slug: 'gift-boxes', tagline: 'Pre-curated Perfection', overlay: 'Popular' },
 ];
 
 // Stricter format: local part + @ + domain with at least one dot, sensible length
@@ -31,7 +35,34 @@ function isDisposableEmail(email) {
   return domain ? DISPOSABLE_DOMAINS.has(domain) : true;
 }
 
-export default function HomeNew() {
+export default function Home() {
+  const [shopCategories, setShopCategories] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.get('/categories');
+        if (!cancelled) setShopCategories(Array.isArray(res.data) ? res.data : []);
+      } catch {
+        if (!cancelled) setShopCategories([]);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const categoryCards = (shopCategories && shopCategories.length > 0)
+    ? shopCategories.map((cat, idx) => ({
+        ...cat,
+        image: cat.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
+        tagline: cat.tagline || cat.description || STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.tagline || '',
+        overlay: cat.overlay || 'Trending',
+      }))
+    : STATIC_CATEGORY_FALLBACK.map((cat, idx) => ({
+        ...cat,
+        image: FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
+      }));
+
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [step, setStep] = useState('email'); // 'email' | 'code'
@@ -150,7 +181,7 @@ export default function HomeNew() {
         </Link>
       </section>
 
-      {/* Category Grid Section */}
+      {/* Category carousel */}
       <main id="categories" className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
           <div className="max-w-xl">
@@ -162,25 +193,7 @@ export default function HomeNew() {
             <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
           </Link>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {CATEGORIES.map((cat) => (
-            <Link key={cat.slug} to={`/products/${cat.slug}`} className="category-card group cursor-pointer block">
-              <div className="relative aspect-[4/5] rounded-2xl overflow-hidden mb-4 shadow-lg">
-                <img
-                  src={cat.image}
-                  alt={cat.name}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-                />
-                <span className={`overlay-badge overlay-badge-${cat.overlay.toLowerCase()}`}>
-                  {cat.overlay}
-                </span>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              </div>
-              <h4 className="font-serif text-2xl mb-1 text-slate-900 dark:text-white">{cat.name}</h4>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">{cat.tagline}</p>
-            </Link>
-          ))}
-        </div>
+        <CategoryCarousel categoryCards={categoryCards} />
       </main>
 
       {/* Call to Action */}
@@ -226,22 +239,22 @@ export default function HomeNew() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   placeholder="Enter 6-digit code"
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                disabled={status === 'loading'}
-                className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary px-6 py-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 disabled:opacity-60 text-center text-xl tracking-[0.4em] font-mono"
-                maxLength={6}
-                aria-invalid={status === 'error'}
-                aria-describedby={message ? 'newsletter-message' : undefined}
-              />
-              <button
-                type="submit"
-                disabled={status === 'loading'}
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {status === 'loading' ? 'Verifying…' : 'Confirm'}
-              </button>
-            </form>
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  disabled={status === 'loading'}
+                  className="flex-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-primary focus:border-primary px-6 py-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 disabled:opacity-60 text-center text-xl tracking-[0.4em] font-mono"
+                  maxLength={6}
+                  aria-invalid={status === 'error'}
+                  aria-describedby={message ? 'newsletter-message' : undefined}
+                />
+                <button
+                  type="submit"
+                  disabled={status === 'loading'}
+                  className="bg-primary hover:bg-primary/90 text-white px-8 py-4 rounded-xl font-bold transition-all shadow-lg shadow-primary/20 disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {status === 'loading' ? 'Verifying…' : 'Confirm'}
+                </button>
+              </form>
             </>
           )}
 
