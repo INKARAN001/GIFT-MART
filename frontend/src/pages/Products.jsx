@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../api/api';
 import ProductSearchBar from '../components/product/ProductSearchBar';
 import ProductFilterPanel from '../components/product/ProductFilterPanel';
@@ -11,6 +10,7 @@ import ResultsSummary from '../components/product/ResultsSummary';
 import Pagination from '../components/product/Pagination';
 import { mockProducts } from '../data/mockProducts';
 import { filterMockProducts } from '../utils/productFilters';
+import { displayCategoryLabel } from '../utils/categoryLabel';
 
 const PAGE_SIZE = 12;
 
@@ -26,9 +26,6 @@ function shuffleArray(arr) {
 const ALL_MOCK_SHUFFLED = shuffleArray(mockProducts);
 
 export default function Products() {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-
     const [products, setProducts] = useState(ALL_MOCK_SHUFFLED);
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
@@ -39,6 +36,20 @@ export default function Products() {
         customizableOnly: false,
         maxPrice: 10000
     });
+    const [shopCategories, setShopCategories] = useState([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await api.get('/categories');
+                if (!cancelled && Array.isArray(res.data)) setShopCategories(res.data);
+            } catch {
+                if (!cancelled) setShopCategories([]);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const handleSearchChange = (term) => setSearchTerm(term);
     
@@ -47,14 +58,6 @@ export default function Products() {
     const handleClearFilters = () => {
         setSearchTerm('');
         setFilters({ categories: [], customizableOnly: false, maxPrice: 10000 });
-    };
-
-    const handleBuyClick = () => {
-        if (!user) {
-            navigate('/login');
-        } else {
-            alert('Added to cart / Proceeding to checkout');
-        }
     };
 
     // Live backend connection using the dynamic MongoDB filters
@@ -69,10 +72,7 @@ export default function Products() {
                 }
                 
                 if (filters.categories.length > 0) {
-                    filters.categories.forEach(cat => {
-                        // Map internal schema spelling
-                        params.append('categories', cat === 'Bouquets' ? 'Boquet' : cat);
-                    });
+                    filters.categories.forEach((cat) => params.append('categories', cat));
                 }
                 
                 if (filters.customizableOnly) {
@@ -93,11 +93,7 @@ export default function Products() {
                     shortDescription: p.description,
                     image: p.image || p.imageUrl
                 }));
-                if (fetched.length > 0 && fetched.every(p => p.image || p.imageUrl)) {
-                    setProducts(fetched);
-                } else {
-                    setProducts(filterMockProducts(ALL_MOCK_SHUFFLED, searchTerm, filters));
-                }
+                setProducts(fetched);
             } catch (error) {
                 console.error('Failed to fetch filtered products from database', error);
                 setProducts(filterMockProducts(ALL_MOCK_SHUFFLED, searchTerm, filters));
@@ -157,10 +153,19 @@ export default function Products() {
                     marginBottom: '32px', 
                     flexWrap: 'wrap' 
                 }}>
-                    <Link to="/products/flash-cards" className="category-link-btn">Flash Cards</Link>
-                    <Link to="/products/bouquets" className="category-link-btn">Bouquets</Link>
-                    <Link to="/products/frames" className="category-link-btn">Frames</Link>
-                    <Link to="/products/gift-boxes" className="category-link-btn">Gift Boxes</Link>
+                    {shopCategories.length === 0 ? (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Loading collections…</span>
+                    ) : (
+                        shopCategories.map((cat) => (
+                            <Link
+                                key={cat.id || cat._id || cat.slug}
+                                to={`/products/${cat.slug || 'uncategorized'}`}
+                                className="category-link-btn"
+                            >
+                                {displayCategoryLabel(cat.name)}
+                            </Link>
+                        ))
+                    )}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
