@@ -1,35 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import {
+  readGuestCart,
+  writeGuestCart,
+  clearGuestCart,
+  guestCartTotals,
+} from '../utils/guestCartStorage';
 
 const CartContext = createContext(null);
-
-const GUEST_CART_KEY = 'giftmart_guest_cart';
-
-function readGuestCart() {
-  try {
-    const raw = localStorage.getItem(GUEST_CART_KEY);
-    if (!raw) return { items: [] };
-    const p = JSON.parse(raw);
-    return { items: Array.isArray(p.items) ? p.items : [] };
-  } catch {
-    return { items: [] };
-  }
-}
-
-function writeGuestCart(items) {
-  localStorage.setItem(GUEST_CART_KEY, JSON.stringify({ items }));
-}
-
-function guestTotals(items) {
-  let subtotal = 0;
-  let itemCount = 0;
-  for (const line of items) {
-    const price = line.snapshot?.price != null ? Number(line.snapshot.price) : 0;
-    subtotal += price * line.quantity;
-    itemCount += line.quantity;
-  }
-  return { subtotal, itemCount };
-}
 
 export function CartProvider({ children }) {
   const { user, fetchWithAuth } = useAuth();
@@ -56,13 +34,14 @@ export function CartProvider({ children }) {
   const mergeGuestThenLoad = useCallback(async () => {
     const { items: guestItems } = readGuestCart();
     for (const line of guestItems) {
-      if (!line.productId) continue;
+      const pid = line.productId != null ? String(line.productId).trim() : '';
+      if (!pid) continue;
       await fetchWithAuth('/api/cart/items', {
         method: 'POST',
-        body: JSON.stringify({ productId: line.productId, quantity: line.quantity || 1 })
+        body: JSON.stringify({ productId: pid, quantity: line.quantity || 1 })
       });
     }
-    localStorage.removeItem(GUEST_CART_KEY);
+    clearGuestCart();
     await loadServerCart();
   }, [fetchWithAuth, loadServerCart]);
 
@@ -71,6 +50,7 @@ export function CartProvider({ children }) {
     const normalized = guestItems.map((line) => {
       const snap = line.snapshot || {};
       const price = snap.price != null ? Number(snap.price) : 0;
+      const img = snap.image || snap.imageUrl || '';
       return {
         productId: line.productId,
         quantity: line.quantity || 1,
@@ -78,12 +58,13 @@ export function CartProvider({ children }) {
           _id: line.productId,
           name: snap.name || 'Product',
           price,
-          image: snap.image || ''
+          image: img,
+          imageUrl: snap.imageUrl || snap.image || '',
         },
         lineTotal: price * (line.quantity || 1)
       };
     });
-    const t = guestTotals(guestItems);
+    const t = guestCartTotals(guestItems);
     setItems(normalized);
     setSubtotal(t.subtotal);
     setItemCount(t.itemCount);
@@ -109,7 +90,8 @@ export function CartProvider({ children }) {
   }, [user, loadServerCart, loadGuestDisplay]);
 
   const addToCart = useCallback(async (product, quantity = 1) => {
-    const pid = product?._id || product?.id;
+    const rawId = product?._id ?? product?.id;
+    const pid = rawId != null ? String(rawId).trim() : '';
     if (!pid) return { ok: false, message: 'Invalid product' };
     const qty = Math.max(1, quantity);
 
@@ -128,12 +110,14 @@ export function CartProvider({ children }) {
     const snap = {
       name: product.name,
       price: product.price != null ? Number(product.price) : 0,
-      image: product.image || ''
+      image: product.image || product.imageUrl || '',
+      imageUrl: product.imageUrl || product.image || '',
     };
-    const idx = guestItems.findIndex((x) => x.productId === pid);
+    const idx = guestItems.findIndex((x) => String(x.productId || '') === pid);
     if (idx >= 0) {
       guestItems[idx].quantity = (guestItems[idx].quantity || 1) + qty;
       guestItems[idx].snapshot = { ...guestItems[idx].snapshot, ...snap };
+      guestItems[idx].productId = pid;
     } else {
       guestItems.push({ productId: pid, quantity: qty, snapshot: snap });
     }
@@ -143,9 +127,11 @@ export function CartProvider({ children }) {
   }, [user, fetchWithAuth, applyServerPayload, loadGuestDisplay]);
 
   const updateQuantity = useCallback(async (productId, quantity) => {
+    const pid = productId != null ? String(productId).trim() : '';
+    if (!pid) return { ok: false, message: 'Invalid product' };
     const qty = Math.max(1, quantity);
     if (user) {
-      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(productId)}`, {
+      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(pid)}`, {
         method: 'PATCH',
         body: JSON.stringify({ quantity: qty })
       });
@@ -155,7 +141,7 @@ export function CartProvider({ children }) {
       return { ok: true };
     }
     const { items: guestItems } = readGuestCart();
-    const line = guestItems.find((x) => x.productId === productId);
+    const line = guestItems.find((x) => String(x.productId || '') === pid);
     if (line) line.quantity = qty;
     writeGuestCart(guestItems);
     loadGuestDisplay();
@@ -163,15 +149,17 @@ export function CartProvider({ children }) {
   }, [user, fetchWithAuth, applyServerPayload, loadGuestDisplay]);
 
   const removeItem = useCallback(async (productId) => {
+    const pid = productId != null ? String(productId).trim() : '';
+    if (!pid) return { ok: false, message: 'Invalid product' };
     if (user) {
-      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(productId)}`, { method: 'DELETE' });
+      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(pid)}`, { method: 'DELETE' });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) return { ok: false, message: data.message || 'Could not remove' };
       applyServerPayload(data);
       return { ok: true };
     }
     const { items: guestItems } = readGuestCart();
-    writeGuestCart(guestItems.filter((x) => x.productId !== productId));
+    writeGuestCart(guestItems.filter((x) => String(x.productId || '') !== pid));
     loadGuestDisplay();
     return { ok: true };
   }, [user, fetchWithAuth, applyServerPayload, loadGuestDisplay]);
