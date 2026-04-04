@@ -3,10 +3,15 @@ package com.giftmart.controller;
 import com.giftmart.document.*;
 import com.giftmart.repository.*;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.Normalizer;
 import java.util.*;
 
 // admin controller - only admin users can access these endpoints
@@ -18,15 +23,18 @@ public class AdminController {
     private final ProductRepository productRepository;
     private final ReviewRepository reviewRepository;
     private final CategoryRepository categoryRepository;
+    private final MongoTemplate mongoTemplate;
 
     public AdminController(UserRepository userRepository,
                            ProductRepository productRepository,
                            ReviewRepository reviewRepository,
-                           CategoryRepository categoryRepository) {
+                           CategoryRepository categoryRepository,
+                           MongoTemplate mongoTemplate) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
         this.reviewRepository = reviewRepository;
         this.categoryRepository = categoryRepository;
+        this.mongoTemplate = mongoTemplate;
     }
 
     // check if user is admin, throw error if not
@@ -90,27 +98,43 @@ public class AdminController {
 
     // ── CATEGORIES ─────────────────────────────────────────────────────────
 
-    // get all categories (public access allowed – no auth check)
+    // get all categories (same data as public /api/categories; admin UI uses this with token)
     @GetMapping("/categories")
     public ResponseEntity<List<Category>> getAllCategories() {
-        return ResponseEntity.ok(categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "name")));
+        return ResponseEntity.ok(categoryRepository.findAll(
+                Sort.by(Sort.Order.asc("sortOrder"), Sort.Order.asc("name"))));
     }
 
-    // create a new category
     @PostMapping("/categories")
     public ResponseEntity<?> createCategory(@AuthenticationPrincipal User user,
-                                            @RequestBody Category category) {
+                                            @RequestBody Category body) {
         ensureAdmin(user);
-        if (category.getName() == null || category.getName().isBlank()) {
+        if (body.getName() == null || body.getName().isBlank()) {
             return ResponseEntity.badRequest().body(Map.of("message", "Category name is required"));
         }
-        if (categoryRepository.existsByName(category.getName())) {
+        String name = body.getName().trim();
+        if (categoryRepository.existsByName(name)) {
             return ResponseEntity.badRequest().body(Map.of("message", "Category already exists"));
         }
-        return ResponseEntity.status(201).body(categoryRepository.save(category));
+        String slug = (body.getSlug() != null && !body.getSlug().isBlank())
+                ? slugify(body.getSlug()) : slugify(name);
+        if (slug.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Could not build URL slug from name"));
+        }
+        if (categoryRepository.existsBySlug(slug)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Slug already in use"));
+        }
+        Category cat = new Category();
+        cat.setName(name);
+        cat.setSlug(slug);
+        cat.setDescription(body.getDescription());
+        cat.setImage(body.getImage());
+        cat.setTagline(body.getTagline());
+        cat.setOverlay(body.getOverlay());
+        cat.setSortOrder(body.getSortOrder() != null ? body.getSortOrder() : Integer.valueOf(0));
+        return ResponseEntity.status(201).body(categoryRepository.save(cat));
     }
 
-    // update a category
     @PutMapping("/categories/{id}")
     public ResponseEntity<?> updateCategory(@AuthenticationPrincipal User user,
                                             @PathVariable String id,
@@ -118,32 +142,79 @@ public class AdminController {
         ensureAdmin(user);
         return categoryRepository.findById(id)
                 .map(cat -> {
+                    String oldName = cat.getName();
                     if (updated.getName() != null && !updated.getName().isBlank()) {
-                        // check for duplicate name (only if name changed)
-                        if (!cat.getName().equals(updated.getName())
-                                && categoryRepository.existsByName(updated.getName())) {
+                        String newName = updated.getName().trim();
+                        if (!oldName.equals(newName) && categoryRepository.existsByName(newName)) {
                             throw new org.springframework.web.server.ResponseStatusException(
                                     org.springframework.http.HttpStatus.BAD_REQUEST,
                                     "Category name already exists");
                         }
-                        cat.setName(updated.getName());
+                        if (!oldName.equals(newName)) {
+                            syncProductCategoryStrings(oldName, newName);
+                            cat.setName(newName);
+                        }
+                    }
+                    if (updated.getSlug() != null && !updated.getSlug().isBlank()) {
+                        String newSlug = slugify(updated.getSlug());
+                        if (!newSlug.equals(cat.getSlug()) && categoryRepository.existsBySlug(newSlug)) {
+                            throw new org.springframework.web.server.ResponseStatusException(
+                                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                                    "Slug already in use");
+                        }
+                        cat.setSlug(newSlug);
                     }
                     if (updated.getDescription() != null) {
                         cat.setDescription(updated.getDescription());
+                    }
+                    if (updated.getImage() != null) {
+                        cat.setImage(updated.getImage());
+                    }
+                    if (updated.getTagline() != null) {
+                        cat.setTagline(updated.getTagline());
+                    }
+                    if (updated.getOverlay() != null) {
+                        cat.setOverlay(updated.getOverlay());
+                    }
+                    if (updated.getSortOrder() != null) {
+                        cat.setSortOrder(updated.getSortOrder());
                     }
                     return ResponseEntity.ok(categoryRepository.save(cat));
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // delete a category
     @DeleteMapping("/categories/{id}")
     public ResponseEntity<?> deleteCategory(@AuthenticationPrincipal User user,
-                                             @PathVariable String id) {
+                                            @PathVariable String id) {
         ensureAdmin(user);
-        if (!categoryRepository.existsById(id)) return ResponseEntity.notFound().build();
-        categoryRepository.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Category deleted"));
+        return categoryRepository.findById(id)
+                .map(cat -> {
+                    long n = productRepository.countByCategory(cat.getName());
+                    if (n > 0) {
+                        return ResponseEntity.badRequest()
+                                .body(Map.of("message",
+                                        "Cannot delete: " + n + " product(s) still use category \"" + cat.getName()
+                                                + "\". Remove or reassign those products first."));
+                    }
+                    categoryRepository.delete(cat);
+                    return ResponseEntity.ok(Map.of("message", "Category deleted"));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private void syncProductCategoryStrings(String oldName, String newName) {
+        Query q = Query.query(Criteria.where("category").is(oldName));
+        Update u = new Update().set("category", newName).set("updatedAt", new Date());
+        mongoTemplate.updateMulti(q, u, Product.class);
+    }
+
+    private static String slugify(String input) {
+        if (input == null || input.isBlank()) {
+            return "";
+        }
+        String n = Normalizer.normalize(input.trim(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return n.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
     }
 
     // ── PRODUCTS ───────────────────────────────────────────────────────────
@@ -161,6 +232,12 @@ public class AdminController {
                                                   @RequestBody Product product) {
         ensureAdmin(user);
         product.setId(null);
+        product.setActive(true);
+        if (product.getUnitsSold() < 0) {
+            product.setUnitsSold(0);
+        }
+        product.setCreatedAt(new Date());
+        product.setUpdatedAt(new Date());
         return ResponseEntity.status(201).body(productRepository.save(product));
     }
 
@@ -177,6 +254,10 @@ public class AdminController {
                     if (body.getCategory() != null) p.setCategory(body.getCategory());
                     if (body.getPrice() > 0) p.setPrice(body.getPrice());
                     if (body.getStock() >= 0) p.setStock(body.getStock());
+                    if (body.getUnitsSold() >= 0) p.setUnitsSold(body.getUnitsSold());
+                    if (body.getImage() != null) p.setImage(body.getImage());
+                    p.setCustomizable(body.isCustomizable());
+                    if (body.getCustomOptions() != null) p.setCustomOptions(body.getCustomOptions());
                     p.setUpdatedAt(new Date());
                     return ResponseEntity.ok(productRepository.save(p));
                 })
@@ -227,4 +308,5 @@ public class AdminController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
 }
