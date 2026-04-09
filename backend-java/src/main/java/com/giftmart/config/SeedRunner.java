@@ -54,11 +54,9 @@ public class SeedRunner implements CommandLineRunner {
             System.out.println("Default categories created (synced with product filters).");
         }
 
-        // add sample products if they dont exist
-        boolean hasOurProducts = productRepository.findAll().stream()
-                .anyMatch(p -> "Rose Bouquet".equals(p.getName()));
-        if (!hasOurProducts) {
-            productRepository.deleteAll();
+        // Sample products only when the catalog is completely empty (first install).
+        // Never delete existing rows — admin edits must persist across restarts.
+        if (productRepository.count() == 0) {
             List<Product> products = Arrays.asList(
                     createProduct("Rose Bouquet", "Classic rose bouquet, perfect for any occasion.", "Bouquet", 3500,
                             50, false),
@@ -81,6 +79,8 @@ public class SeedRunner implements CommandLineRunner {
                     createProduct("Premium Gift Box (Large)", "Large premium gift box.", "Gift Box", 1200, 50, false));
             productRepository.saveAll(products);
             System.out.println("Sample products created (Bouquet, Flash Cards, Frames, Gift Box).");
+        } else {
+            System.out.println("Products collection already has data — skipping sample product seed.");
         }
     }
 
