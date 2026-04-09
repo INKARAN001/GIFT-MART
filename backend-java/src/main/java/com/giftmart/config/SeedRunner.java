@@ -1,7 +1,9 @@
 package com.giftmart.config;
 
+import com.giftmart.document.Category;
 import com.giftmart.document.Product;
 import com.giftmart.document.User;
+import com.giftmart.repository.CategoryRepository;
 import com.giftmart.repository.ProductRepository;
 import com.giftmart.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -17,12 +19,14 @@ public class SeedRunner implements CommandLineRunner {
 
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
+    private final CategoryRepository categoryRepository;
     private final PasswordEncoder passwordEncoder;
 
     public SeedRunner(UserRepository userRepository, ProductRepository productRepository,
-            PasswordEncoder passwordEncoder) {
+                      CategoryRepository categoryRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.productRepository = productRepository;
+        this.categoryRepository = categoryRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -39,11 +43,20 @@ public class SeedRunner implements CommandLineRunner {
             System.out.println("Admin user created: admin@giftmart.com / admin123");
         }
 
-        // add sample products if they dont exist
-        boolean hasOurProducts = productRepository.findAll().stream()
-                .anyMatch(p -> "Rose Bouquet".equals(p.getName()));
-        if (!hasOurProducts) {
-            productRepository.deleteAll();
+        // default categories (names must match product.category strings)
+        if (categoryRepository.count() == 0) {
+            categoryRepository.saveAll(Arrays.asList(
+                    seedCategory("Flash Cards", "flash-cards", "Bright learning essentials", "Aesthetic", "Trending", 0),
+                    seedCategory("Bouquet", "bouquets", "Hand-picked arrangements", "Hand-picked Elegance", "New", 1),
+                    seedCategory("Frames", "frames", "Preserve your memories", "Preserve Your Memories", "Bestseller", 2),
+                    seedCategory("Gift Box", "gift-boxes", "Ready-to-gift packaging", "Pre-curated Perfection", "Popular", 3)
+            ));
+            System.out.println("Default categories created (synced with product filters).");
+        }
+
+        // Sample products only when the catalog is completely empty (first install).
+        // Never delete existing rows — admin edits must persist across restarts.
+        if (productRepository.count() == 0) {
             List<Product> products = Arrays.asList(
                     createProduct("Rose Bouquet", "Classic rose bouquet, perfect for any occasion.", "Bouquet", 3500,
                             50, false),
@@ -66,12 +79,26 @@ public class SeedRunner implements CommandLineRunner {
                     createProduct("Premium Gift Box (Large)", "Large premium gift box.", "Gift Box", 1200, 50, false));
             productRepository.saveAll(products);
             System.out.println("Sample products created (Bouquet, Flash Cards, Frames, Gift Box).");
+        } else {
+            System.out.println("Products collection already has data — skipping sample product seed.");
         }
+    }
+
+    private static Category seedCategory(String name, String slug, String description, String tagline, String overlay,
+                                         int sortOrder) {
+        Category c = new Category();
+        c.setName(name);
+        c.setSlug(slug);
+        c.setDescription(description);
+        c.setTagline(tagline);
+        c.setOverlay(overlay);
+        c.setSortOrder(sortOrder);
+        return c;
     }
 
     // helper method to create a product object
     private static Product createProduct(String name, String desc, String category, double price, int stock,
-            boolean customizable) {
+                                         boolean customizable) {
         Product p = new Product();
         p.setName(name);
         p.setDescription(desc);
