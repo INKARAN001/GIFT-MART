@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
-import Home from './pages/HomeNew';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Products from './pages/Products';
 import Profile from './pages/Profile';
@@ -10,11 +10,11 @@ import ResetPassword from './pages/ResetPassword';
 import ProductDetail from './pages/ProductDetail';
 import AdminPanel from './pages/admin/AdminPanel';
 import SplashScreen from './components/SplashScreen';
-import FlashCards from './pages/FlashCards';
-import Bouquets from './pages/Bouquets';
-import Frames from './pages/Frames';
-import GiftBoxes from './pages/GiftBoxes';
+import CategoryProductsPage from './pages/CategoryProductsPage';
 import NotFound from './pages/NotFound';
+import Cart from './pages/Cart';
+import Wishlist from './pages/Wishlist';
+import Reminders from './pages/Reminders';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -50,15 +50,19 @@ export default function App() {
       <Route path="/" element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="products" element={<Products />} />
-        <Route path="products/flash-cards" element={<FlashCards />} />
-        <Route path="products/bouquets" element={<Bouquets />} />
-        <Route path="products/frames" element={<Frames />} />
-        <Route path="products/gift-boxes" element={<GiftBoxes />} />
+        <Route path="products/:categorySlug" element={<CategoryProductsPage />} />
         <Route path="product/:id" element={<ProductDetail />} />
         <Route path="login" element={<Login />} />
         <Route path="reset-password" element={<ResetPassword />} />
         <Route path="profile" element={
           <ProtectedRoute><Profile /></ProtectedRoute>
+        } />
+        <Route path="cart" element={<Cart />} />
+        <Route path="wishlist" element={
+          <ProtectedRoute><Wishlist /></ProtectedRoute>
+        } />
+        <Route path="reminders" element={
+          <ProtectedRoute><Reminders /></ProtectedRoute>
         } />
       </Route>
 
