@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AuthContext = createContext(null);
 
@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchWithAuth = async (url, options = {}) => {
+  const fetchWithAuth = useCallback(async (url, options = {}) => {
     const token = localStorage.getItem('token');
     const res = await fetch(url, {
       ...options,
@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
       setUser(null);
     }
     return res;
-  };
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');

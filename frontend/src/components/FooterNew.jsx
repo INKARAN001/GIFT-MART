@@ -29,6 +29,7 @@ export default function FooterNew() {
         <div>
           <h5 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Quick Links</h5>
           <ul className="space-y-4 text-sm">
+            <li><Link to="/about-us" className="hover:text-primary transition-colors">About Gift Mart</Link></li>
             <li><Link to="/products" className="hover:text-primary transition-colors">Personalized Gifts</Link></li>
             <li><a href="#" className="hover:text-primary transition-colors">Corporate Gifting</a></li>
             <li><a href="#" className="hover:text-primary transition-colors">Anniversary Specials</a></li>

@@ -1,10 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getImageSrc } from '../../utils/imageUrl';
 import StarRating from './StarRating';
+import { displayCategoryLabel } from '../../utils/categoryLabel';
+import { useAuth } from '../../context/AuthContext';
+import { useCart } from '../../context/CartContext';
 
 export default function ProductModal({ product, onClose }) {
     const navigate = useNavigate();
+    const { user, fetchWithAuth } = useAuth();
+    const { addToCart } = useCart();
+    const [cartFeedback, setCartFeedback] = useState('');
 
     useEffect(() => {
         const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
@@ -17,6 +23,40 @@ export default function ProductModal({ product, onClose }) {
     }, [onClose]);
 
     if (!product) return null;
+
+    const pid = product._id || product.id;
+    const payload = {
+        _id: pid,
+        id: pid,
+        name: product.name,
+        price: product.price,
+        image: product.image || product.imageUrl
+    };
+
+    const handleAddToCart = async () => {
+        setCartFeedback('');
+        const r = await addToCart(payload, 1);
+        if (r.ok) {
+            setCartFeedback('Added to cart — check the bag icon for your total.');
+            window.setTimeout(() => setCartFeedback(''), 4000);
+        } else alert(r.message || 'Could not add to cart');
+    };
+
+    const handleWishlist = async () => {
+        if (!user) {
+            onClose();
+            navigate('/login');
+            return;
+        }
+        if (!pid) return;
+        const r = await fetchWithAuth('/api/wishlist/items', {
+            method: 'POST',
+            body: JSON.stringify({ productId: pid })
+        });
+        const data = await r.json().catch(() => ({}));
+        if (r.ok) alert('Saved to your wishlist.');
+        else alert(data.message || 'Could not save');
+    };
 
     return (
         <div
@@ -52,9 +92,9 @@ export default function ProductModal({ product, onClose }) {
                 }}
             >
                 <div style={{ position: 'relative', width: '100%', paddingTop: '100%', background: 'var(--page-gold-warm)' }}>
-                    {product.image ? (
+                    {product.image || product.imageUrl ? (
                         <img
-                            src={getImageSrc(product.image)}
+                            src={getImageSrc(product.image || product.imageUrl)}
                             alt={product.name}
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -86,7 +126,7 @@ export default function ProductModal({ product, onClose }) {
                 </div>
                 <div style={{ padding: '24px', flex: 1, overflow: 'auto' }}>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                        {product.category === 'Boquet' ? 'Bouquets' : product.category}
+                        {displayCategoryLabel(product.category)}
                     </span>
                     <h2 id="product-modal-title" style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', margin: '8px 0 8px', lineHeight: '1.3' }}>
                         {product.name}
@@ -97,41 +137,68 @@ export default function ProductModal({ product, onClose }) {
                     <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '20px' }}>
                         {product.shortDescription || product.description || 'Premium product with gift-ready packaging. Details available on the product page.'}
                     </p>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                        <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-muted)' }}>
-                            LKR {product.price != null ? Number(product.price).toLocaleString() : '—'}
-                        </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                            <span style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--gold-muted)' }}>
+                                LKR {product.price != null ? Number(product.price).toLocaleString() : '—'}
+                            </span>
+                            <button
+                                type="button"
+                                className="btn-primary product-add-to-cart-btn"
+                                onClick={handleAddToCart}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '0.75rem',
+                                    border: 'none',
+                                    background: '#5F9EA0',
+                                    color: '#fff',
+                                    cursor: 'pointer',
+                                    fontWeight: '700',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    boxShadow: '0 4px 14px rgba(95, 158, 160, 0.35)',
+                                    transition: 'all 0.2s ease',
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.background = '#4B8A8C';
+                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(95, 158, 160, 0.4)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.background = '#5F9EA0';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.boxShadow = '0 4px 14px rgba(95, 158, 160, 0.35)';
+                                }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>shopping_cart</span>
+                                Add to cart
+                            </button>
+                        </div>
+                        {cartFeedback ? (
+                            <p role="status" aria-live="polite" style={{ margin: '0 0 8px', fontSize: '0.8125rem', fontWeight: 600, color: '#059669' }}>
+                                {cartFeedback}
+                            </p>
+                        ) : null}
                         <button
                             type="button"
-                            className="btn-primary product-add-to-cart-btn"
-                            onClick={() => navigate('/cart')}
+                            onClick={handleWishlist}
                             style={{
-                                padding: '10px 20px',
-                                borderRadius: '0.75rem',
-                                border: 'none',
-                                background: '#5F9EA0',
-                                color: '#fff',
-                                cursor: 'pointer',
-                                fontWeight: '700',
-                                display: 'flex',
+                                alignSelf: 'flex-start',
+                                display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '8px',
-                                boxShadow: '0 4px 14px rgba(95, 158, 160, 0.35)',
-                                transition: 'all 0.2s ease',
-                            }}
-                            onMouseOver={(e) => {
-                                e.currentTarget.style.background = '#4B8A8C';
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(95, 158, 160, 0.4)';
-                            }}
-                            onMouseOut={(e) => {
-                                e.currentTarget.style.background = '#5F9EA0';
-                                e.currentTarget.style.transform = 'translateY(0)';
-                                e.currentTarget.style.boxShadow = '0 4px 14px rgba(95, 158, 160, 0.35)';
+                                padding: '8px 16px',
+                                borderRadius: '0.75rem',
+                                border: '1px solid var(--border-color, #e2e8f0)',
+                                background: 'transparent',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                color: 'var(--text-primary)',
                             }}
                         >
-                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>shopping_cart</span>
-                            Add to cart
+                            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>favorite</span>
+                            Wishlist
                         </button>
                     </div>
                 </div>
