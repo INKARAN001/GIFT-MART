@@ -8,7 +8,7 @@ import Products from './pages/Products';
 import Profile from './pages/Profile';
 import ResetPassword from './pages/ResetPassword';
 import ProductDetail from './pages/ProductDetail';
-import AdminPanel from './pages/admin/AdminPanel';
+import AdminPanel from './pages/AdminPanel';
 import SplashScreen from './components/SplashScreen';
 import CategoryProductsPage from './pages/CategoryProductsPage';
 import NotFound from './pages/NotFound';
