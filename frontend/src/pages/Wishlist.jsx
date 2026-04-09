@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
@@ -13,9 +13,13 @@ export default function Wishlist() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const successClearRef = useRef(null);
 
-  // Out of scope for "move wishlist item to cart" scrum:
-  // - Loading/initial fetch logic also supports remove and empty state display.
+  useEffect(() => () => {
+    if (successClearRef.current) window.clearTimeout(successClearRef.current);
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -30,7 +34,6 @@ export default function Wishlist() {
 
   useEffect(() => { load(); }, [load]);
 
-  // Out of scope for this scrum: standalone removal action (kept for page completeness)
   const remove = async (productId) => {
     setBusyId(productId);
     try {
@@ -41,21 +44,26 @@ export default function Wishlist() {
     }
   };
 
-  const moveToCart = async (productId) => {
+  const moveToCart = async (productId, productName) => {
     setBusyId(productId);
+    setSuccessMessage('');
+    if (successClearRef.current) window.clearTimeout(successClearRef.current);
     try {
       const r = await fetchWithAuth(`${API}/wishlist/move-to-cart`, {
         method: 'POST',
         body: JSON.stringify({ productId, quantity: 1 })
       });
+      const data = await r.json().catch(() => ({}));
       if (r.ok) {
-        // Success message per acceptance criteria for this scrum
-        alert('Moved to cart.');
         await refreshCart();
         await load();
+        const label = productName?.trim() ? `“${productName.trim()}”` : 'This item';
+        setSuccessMessage(
+          `${label} was added to your cart (quantity set to 1 or increased if it was already in your cart) and removed from your wishlist.`
+        );
+        successClearRef.current = window.setTimeout(() => setSuccessMessage(''), 6000);
       } else {
-        const err = await r.json().catch(() => ({}));
-        alert(err.message || 'Could not move to cart');
+        alert(data.message || 'Could not move to cart');
       }
     } finally {
       setBusyId(null);
@@ -68,11 +76,56 @@ export default function Wishlist() {
 
   return (
     <div style={{ maxWidth: '960px', margin: '0 auto', padding: '2rem 1.25rem 4rem' }}>
+      {successMessage ? (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            marginBottom: '1.25rem',
+            padding: '0.85rem 1.1rem',
+            borderRadius: '0.75rem',
+            background: 'linear-gradient(135deg, rgba(95, 158, 160, 0.12), rgba(16, 185, 129, 0.1))',
+            border: '1px solid rgba(95, 158, 160, 0.35)',
+            color: '#0f766e',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: '0.75rem'
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }} aria-hidden>
+              check_circle
+            </span>
+            {successMessage}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              setSuccessMessage('');
+              if (successClearRef.current) window.clearTimeout(successClearRef.current);
+            }}
+            style={{
+              flexShrink: 0,
+              border: 'none',
+              background: 'transparent',
+              color: '#0f766e',
+              cursor: 'pointer',
+              fontWeight: 700,
+              padding: '0.15rem 0.35rem'
+            }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>Wishlist</h1>
       <p style={{ color: '#64748b', marginBottom: '2rem' }}>Save items for later and move them to your bag when you are ready.</p>
 
       {items.length === 0 ? (
-        // Empty state shown — supportive but not the core of this scrum
         <div style={{ textAlign: 'center', padding: '3rem', borderRadius: '1rem', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
           <span className="material-symbols-outlined" style={{ fontSize: '3rem', color: '#cbd5e1' }}>favorite</span>
           <p style={{ marginTop: '1rem', color: '#64748b' }}>No saved items yet.</p>
@@ -124,7 +177,7 @@ export default function Wishlist() {
                   <button
                     type="button"
                     disabled={busy}
-                    onClick={() => moveToCart(pid)}
+                    onClick={() => moveToCart(pid, p.name)}
                     className="btn-primary"
                     style={{ padding: '0.5rem 0.75rem', borderRadius: '0.5rem', border: 'none', fontWeight: 700, cursor: busy ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}
                   >
