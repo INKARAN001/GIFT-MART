@@ -1,13 +1,16 @@
 package com.giftmart.controller;
 
+import com.giftmart.document.Order;
 import com.giftmart.document.User;
 import com.giftmart.repository.UserRepository;
+import com.giftmart.service.OrderService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 // Sprint 1: get profile, update profile, change password only
@@ -17,10 +20,20 @@ public class UserController {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OrderService orderService;
 
-    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserController(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                          OrderService orderService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.orderService = orderService;
+    }
+
+    // orders placed by the current user (newest first)
+    @GetMapping("/orders")
+    public ResponseEntity<List<Order>> getMyOrders(@AuthenticationPrincipal User user) {
+        if (user == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(orderService.listForUser(user));
     }
 
     // get current user's profile
