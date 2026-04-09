@@ -24,7 +24,7 @@ public class Product {
     private String category; // like Bouquet, Flash Cards, Frames, Gift Box
     private double price;
     private int stock; // how many left
-    /** Lifetime units sold — used for admin revenue reporting (orders not modeled yet). */
+    /** Lifetime units sold — incremented when orders are placed. */
     private int unitsSold;
     private String image; // main image url
     private List<String> images; // multiple images
