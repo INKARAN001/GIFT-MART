@@ -29,6 +29,9 @@ public interface ProductRepository extends MongoRepository<Product, String> {
     // count active products in a category
     long countByCategoryAndActiveTrue(String category);
 
+    /** All products (any active flag) with this category name — used before deleting a category */
+    long countByCategory(String category);
+
     // count keyword matches
     long countByNameContainingIgnoreCaseAndActiveTrue(String keyword);
 
