@@ -24,6 +24,8 @@ public class Product {
     private String category; // like Bouquet, Flash Cards, Frames, Gift Box
     private double price;
     private int stock; // how many left
+    /** Lifetime units sold — used for admin revenue reporting (orders not modeled yet). */
+    private int unitsSold;
     private String image; // main image url
     private List<String> images; // multiple images
     @Field("isCustomizable")
@@ -41,6 +43,7 @@ public class Product {
         this.updatedAt = new Date();
         this.customOptions = new ArrayList<>();
         this.images = new ArrayList<>();
+        this.unitsSold = 0;
     }
 
     // inner class for custom options (like color picker, text input etc)
@@ -131,6 +134,14 @@ public class Product {
 
     public void setStock(int stock) {
         this.stock = stock;
+    }
+
+    public int getUnitsSold() {
+        return unitsSold;
+    }
+
+    public void setUnitsSold(int unitsSold) {
+        this.unitsSold = unitsSold;
     }
 
     public String getImage() {
