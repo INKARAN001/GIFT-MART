@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getImageSrc } from '../../utils/imageUrl';
 import StarRating from './StarRating';
@@ -10,6 +10,7 @@ export default function ProductModal({ product, onClose }) {
     const navigate = useNavigate();
     const { user, fetchWithAuth } = useAuth();
     const { addToCart } = useCart();
+    const [cartFeedback, setCartFeedback] = useState('');
 
     useEffect(() => {
         const handleEscape = (e) => { if (e.key === 'Escape') onClose(); };
@@ -29,14 +30,15 @@ export default function ProductModal({ product, onClose }) {
         id: pid,
         name: product.name,
         price: product.price,
-        image: product.image
+        image: product.image || product.imageUrl
     };
 
     const handleAddToCart = async () => {
+        setCartFeedback('');
         const r = await addToCart(payload, 1);
         if (r.ok) {
-            onClose();
-            navigate('/cart');
+            setCartFeedback('Added to cart — check the bag icon for your total.');
+            window.setTimeout(() => setCartFeedback(''), 4000);
         } else alert(r.message || 'Could not add to cart');
     };
 
@@ -90,9 +92,9 @@ export default function ProductModal({ product, onClose }) {
                 }}
             >
                 <div style={{ position: 'relative', width: '100%', paddingTop: '100%', background: 'var(--page-gold-warm)' }}>
-                    {product.image ? (
+                    {product.image || product.imageUrl ? (
                         <img
-                            src={getImageSrc(product.image)}
+                            src={getImageSrc(product.image || product.imageUrl)}
                             alt={product.name}
                             style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -173,6 +175,11 @@ export default function ProductModal({ product, onClose }) {
                                 Add to cart
                             </button>
                         </div>
+                        {cartFeedback ? (
+                            <p role="status" aria-live="polite" style={{ margin: '0 0 8px', fontSize: '0.8125rem', fontWeight: 600, color: '#059669' }}>
+                                {cartFeedback}
+                            </p>
+                        ) : null}
                         <button
                             type="button"
                             onClick={handleWishlist}
