@@ -18,7 +18,7 @@ public class User {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "email_1", unique = true)
     private String email;
     private String password; // stored as bcrypt hash
     private String name;
@@ -35,6 +35,13 @@ public class User {
     private String verificationCode; // 6-digit code sent on register
     private Date verificationCodeExpiry;
 
+    /** null or true = send event reminder emails; false = opt out */
+    private Boolean notifyEventReminders;
+    /** null or true = allow promotional emails; false = opt out */
+    private Boolean notifyPromotions;
+    /** Opaque token for one-click unsubscribe links in emails */
+    private String unsubscribeToken;
+
     public User() {
         this.createdAt = new Date();
         this.updatedAt = new Date();
@@ -42,7 +49,7 @@ public class User {
 
     // inner class for user address
     public static class Address {
-        private String street, city, state, zip, country;
+        private String street, city, district, state, zip, country;
 
         public String getStreet() {
             return street;
@@ -58,6 +65,14 @@ public class User {
 
         public void setCity(String city) {
             this.city = city;
+        }
+
+        public String getDistrict() {
+            return district;
+        }
+
+        public void setDistrict(String district) {
+            this.district = district;
         }
 
         public String getState() {
@@ -218,5 +233,29 @@ public class User {
 
     public void setVerificationCodeExpiry(Date verificationCodeExpiry) {
         this.verificationCodeExpiry = verificationCodeExpiry;
+    }
+
+    public Boolean getNotifyEventReminders() {
+        return notifyEventReminders;
+    }
+
+    public void setNotifyEventReminders(Boolean notifyEventReminders) {
+        this.notifyEventReminders = notifyEventReminders;
+    }
+
+    public Boolean getNotifyPromotions() {
+        return notifyPromotions;
+    }
+
+    public void setNotifyPromotions(Boolean notifyPromotions) {
+        this.notifyPromotions = notifyPromotions;
+    }
+
+    public String getUnsubscribeToken() {
+        return unsubscribeToken;
+    }
+
+    public void setUnsubscribeToken(String unsubscribeToken) {
+        this.unsubscribeToken = unsubscribeToken;
     }
 }
