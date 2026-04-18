@@ -4,6 +4,7 @@ import com.giftmart.document.Reminder;
 import com.giftmart.document.User;
 import com.giftmart.repository.ReminderRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +53,7 @@ public class ReminderController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateMine(@AuthenticationPrincipal User user,
-                                        @PathVariable String id,
+                                        @PathVariable @NonNull String id,
                                         @RequestBody Map<String, Object> body) {
         if (user == null) return ResponseEntity.status(401).build();
         return reminderRepository.findById(id)
@@ -82,7 +83,7 @@ public class ReminderController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteMine(@AuthenticationPrincipal User user,
-                                        @PathVariable String id) {
+                                        @PathVariable @NonNull String id) {
         if (user == null) return ResponseEntity.status(401).build();
         Optional<Reminder> opt = reminderRepository.findById(id);
         if (opt.isEmpty()) return ResponseEntity.notFound().build();
