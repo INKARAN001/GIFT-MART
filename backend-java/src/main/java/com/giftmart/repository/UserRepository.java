@@ -24,4 +24,6 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     // find user by password reset token
     Optional<User> findByResetToken(String resetToken);
+
+    Optional<User> findByUnsubscribeToken(String unsubscribeToken);
 }
