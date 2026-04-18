@@ -14,7 +14,7 @@ public class Reminder {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed
+    @Indexed(name = "userId_1")
     private String userId;
 
     private String title;
