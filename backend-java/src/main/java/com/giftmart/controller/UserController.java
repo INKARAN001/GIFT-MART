@@ -5,6 +5,7 @@ import com.giftmart.document.User;
 import com.giftmart.repository.UserRepository;
 import com.giftmart.service.OrderService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 // Sprint 1: get profile, update profile, change password only
 @RestController
@@ -36,12 +39,20 @@ public class UserController {
         return ResponseEntity.ok(orderService.listForUser(user));
     }
 
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<Order> getMyOrder(@AuthenticationPrincipal User user, @PathVariable @NonNull String orderId) {
+        if (user == null) return ResponseEntity.status(401).build();
+        return ResponseEntity.ok(orderService.getOrderForUser(user, orderId));
+    }
+
     // get current user's profile
     @GetMapping("/profile")
     public ResponseEntity<User> getProfile(@AuthenticationPrincipal User user) {
         if (user == null) return ResponseEntity.status(401).build();
-        return userRepository.findById(user.getId())
+        String uid = Objects.requireNonNull(user.getId(), "user id");
+        return userRepository.findById(uid)
                 .map(u -> {
+                    ensureUnsubscribeToken(u);
                     u.setPassword(null);
                     return ResponseEntity.ok(u);
                 })
@@ -53,7 +64,8 @@ public class UserController {
     public ResponseEntity<User> updateProfile(@AuthenticationPrincipal User user,
                                                @RequestBody Map<String, Object> body) {
         if (user == null) return ResponseEntity.status(401).build();
-        return userRepository.findById(user.getId())
+        String uid = Objects.requireNonNull(user.getId(), "user id");
+        return userRepository.findById(uid)
                 .map(u -> {
                     if (body.containsKey("name"))
                         u.setName((String) body.get("name"));
@@ -66,11 +78,18 @@ public class UserController {
                             User.Address a = new User.Address();
                             a.setStreet(addr.get("street"));
                             a.setCity(addr.get("city"));
+                            a.setDistrict(addr.get("district"));
                             a.setState(addr.get("state"));
                             a.setZip(addr.get("zip"));
                             a.setCountry(addr.get("country"));
                             u.setAddress(a);
                         }
+                    }
+                    if (body.containsKey("notifyEventReminders")) {
+                        u.setNotifyEventReminders(parseBooleanObject(body.get("notifyEventReminders")));
+                    }
+                    if (body.containsKey("notifyPromotions")) {
+                        u.setNotifyPromotions(parseBooleanObject(body.get("notifyPromotions")));
                     }
                     u.setUpdatedAt(new Date());
                     User saved = userRepository.save(u);
@@ -91,7 +110,8 @@ public class UserController {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Invalid password data — new password must be at least 6 characters"));
         }
-        return userRepository.findById(user.getId())
+        String uid = Objects.requireNonNull(user.getId(), "user id");
+        return userRepository.findById(uid)
                 .map(u -> {
                     if (!passwordEncoder.matches(currentPassword, u.getPassword())) {
                         return ResponseEntity.status(400)
@@ -103,5 +123,23 @@ public class UserController {
                     return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    private void ensureUnsubscribeToken(User u) {
+        if (u.getUnsubscribeToken() == null || u.getUnsubscribeToken().isBlank()) {
+            u.setUnsubscribeToken(UUID.randomUUID().toString().replace("-", ""));
+            u.setUpdatedAt(new Date());
+            userRepository.save(u);
+        }
+    }
+
+    private static Boolean parseBooleanObject(Object v) {
+        if (v instanceof Boolean b) {
+            return b;
+        }
+        if (v == null) {
+            return null;
+        }
+        return Boolean.parseBoolean(v.toString());
     }
 }
