@@ -27,6 +27,10 @@ public class Review {
     private String userName;  // display name for the review
     private String userEmail; // display email for the review
     private Date createdAt;
+    /** pending | approved | rejected — null or legacy reviews treated as approved on read */
+    private String moderationStatus;
+    /** Denormalized for admin list */
+    private String productName;
 
     public Review() {
         this.createdAt = new Date();
@@ -57,4 +61,20 @@ public class Review {
 
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
+
+    public String getModerationStatus() {
+        return moderationStatus;
+    }
+
+    public void setModerationStatus(String moderationStatus) {
+        this.moderationStatus = moderationStatus;
+    }
+
+    public String getProductName() {
+        return productName;
+    }
+
+    public void setProductName(String productName) {
+        this.productName = productName;
+    }
 }
