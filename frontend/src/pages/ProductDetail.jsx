@@ -4,24 +4,15 @@ import api from '../api/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getImageSrc } from '../utils/imageUrl';
+import { FEATURES } from '../config/features';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 import '../styles/product-detail.css';
 
-const FIGMA_SAMPLE_REVIEWS = [
-    {
-        _id: 'sample-1',
-        userName: 'Amaya Fernando',
-        createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-        rating: 5,
-        comment: 'The wrap quality is exceptional and the lilies smelled divine.'
-    },
-    {
-        _id: 'sample-2',
-        userName: 'Rohan Silva',
-        createdAt: new Date(Date.now() - 86400000 * 9).toISOString(),
-        rating: 4,
-        comment: 'Beautifully arranged, though some blooms were slightly smaller than expected.'
-    }
-];
+const API = getApiBaseUrl();
+
+/** One image per product (listing + detail). When missing, use this placeholder — no extra stock gallery. */
+const PLACEHOLDER_IMAGE = '/placeholder-gift.svg';
 
 export default function ProductDetail() {
     const { id } = useParams();
@@ -33,15 +24,15 @@ export default function ProductDetail() {
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
     const [cartAddedMsg, setCartAddedMsg] = useState('');
+    const [myReview, setMyReview] = useState(null);
+    /** False until /reviews/me/product/:id returns (logged-in users only). */
+    const [reviewMeLoaded, setReviewMeLoaded] = useState(false);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState('');
+    const [reviewBusy, setReviewBusy] = useState(false);
+    const [reviewFeedback, setReviewFeedback] = useState('');
 
-    const defaultImages = [
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBiNF7V5zVY9pVnhmiDVT9RDuGHFe1hXr44idoJjd21ehFVCeKc85IkEc9IMteEFQDUoWIWRSoYZ24DOxj5KruDUVC1kO1SCkdouaSw14qCb3ELKB9uvg6UpM1us-LMvPjuMVtUtNJgzwTqNPo-YH4r3O2PB0XMxeTZUF0FnNlYGPjs9iDVF1KPtpSJpRHgZbhe6x7Z5oEodWEX-XtlpPGvX_ANsY0r9tvX6u_n8hLPfL9iUPgObboF6P5a7vbRzVHN0uY6kKjeisaA',
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuCW_lN5bLeLD27WR3a2roA0eD0NaMeeTB5JYV8QoSk9t5Yye3Iz01yjDLm5LDw5bp8yS3tzMGbcb5fMR6MDAG5MDP3als4lLvb7ZL6BKVJgFLcWR7ONIZbAdLQAsf1io6iY0qzaZ-E727AytKzpaQdG16jNIlZ1-pzC1rQ5w3g0eVckp_a9gc24JgXkvobzE5-Ad0Qm2EtVulxJTIpjGtUXEPujVLJd9dK247pYaA0F0l-FhCfK_M5yScmyMd3DlEGwYKgOhkIST8eD',
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBcBSi2-M-aSyN-hOKDPqhPOon4Rhx3RfDV6P3YKYEhFykSpPRMF-E8VIhYdv1P1WBIDTRI0Wy90jXWOoatLOEWUFU0H2uV41WnUMkFJexlsSP7B8793uBd94jXfB1_l1JL8gospVRhCmJj6UinzhJnEnTpvT2jXVA8rvGDqJOe2aO1es-8KNv8Wj6s0NKhZzx4YbX1e3ejQIBYJCJQNznmnR-gRIL-YAL9EZ5y4ZPZXO6QGCLup3ixj6_spN6JOgfr7zNE3oYJi3IT',
-        'https://lh3.googleusercontent.com/aida-public/AB6AXuBFlxUm-YKbHZgltY3ZSdxbHI1DQzEUJt0fXQ-MKKnmH0B0MYMCDtznd6EJXrMHuz92itieo1yCWxxCJTQE6oWj3WcMazWelc2pXF0ya5sFqymnscOLvd8OGitJcFjh1gqkCBjUqZPli5Yw1OpGJXRw4DdVwc_TwCQw8oYJkQQXePsmS1VBvP6s_CldCnM66blLBPZk7ZQfLsUaKga0KFB3LAZw5pIWBvXelAiHLoo429aaD1XiTOVZbI9ki2BQ4EkKswneXh1IQE4A'
-    ];
-
-    const [mainImage, setMainImage] = useState(defaultImages[0]);
+    const [mainImage, setMainImage] = useState(PLACEHOLDER_IMAGE);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -49,8 +40,9 @@ export default function ProductDetail() {
                 const res = await api.get(`/products/${id}`);
                 setProduct(res.data);
                 const hero = res.data.image || res.data.imageUrl;
-                if (hero) setMainImage(hero);
+                setMainImage(hero || PLACEHOLDER_IMAGE);
             } catch {
+                setMainImage(PLACEHOLDER_IMAGE);
                 setProduct({
                     name: 'Midnight Elegance Bouquet',
                     category: 'Premium Selection',
@@ -68,7 +60,7 @@ export default function ProductDetail() {
     const productId = product?._id || product?.id || id;
 
     useEffect(() => {
-        if (!productId) return;
+        if (!FEATURES.REVIEWS || !productId) return undefined;
         let cancelled = false;
         api.get(`/reviews/product/${encodeURIComponent(productId)}`)
             .then((res) => {
@@ -78,15 +70,48 @@ export default function ProductDetail() {
                 if (!cancelled) setReviews([]);
             });
         return () => { cancelled = true; };
-    }, [productId]);
+    }, [FEATURES.REVIEWS, productId]);
 
-    if (loading) return <div className="page-loading">Loading...</div>;
+    useEffect(() => {
+        if (!FEATURES.REVIEWS) {
+            setMyReview(null);
+            setReviewMeLoaded(true);
+            return undefined;
+        }
+        if (!user || !productId) {
+            setMyReview(null);
+            setReviewMeLoaded(true);
+            return undefined;
+        }
+        let cancelled = false;
+        setReviewMeLoaded(false);
+        fetchWithAuth(`${API}/reviews/me/product/${encodeURIComponent(productId)}`)
+            .then(async (r) => jsonFromResponse(r, null))
+            .then((data) => {
+                if (!cancelled && data) setMyReview(data);
+            })
+            .catch(() => {
+                if (!cancelled) setMyReview({ hasReview: false, canReview: false });
+            })
+            .finally(() => {
+                if (!cancelled) setReviewMeLoaded(true);
+            });
+        return () => { cancelled = true; };
+    }, [FEATURES.REVIEWS, user, productId, fetchWithAuth]);
+
+    if (loading) {
+        return (
+            <div className="page-loading page-loading--spinner" style={{ minHeight: '50vh' }}>
+                <span className="gm-spinner" aria-hidden />
+                <span>Loading product…</span>
+            </div>
+        );
+    }
 
     const p = product;
     const productImageField = p?.image || p?.imageUrl;
-    const thumbList = productImageField
-        ? [productImageField, ...defaultImages.filter((u) => u !== productImageField).slice(0, 3)]
-        : defaultImages;
+    /** Same URL as grid/card: one hero, no fake extra gallery shots. */
+    const thumbList = productImageField ? [productImageField] : [PLACEHOLDER_IMAGE];
 
     const buildCartPayload = () => ({
         _id: productId,
@@ -123,19 +148,61 @@ export default function ProductDetail() {
             return;
         }
         if (!productId) return;
-        const r = await fetchWithAuth('/api/wishlist/items', {
+        const r = await fetchWithAuth(`${API}/wishlist/items`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ productId })
         });
-        const data = await r.json().catch(() => ({}));
+        const data = await jsonFromResponse(r, {});
         if (r.ok) alert('Saved to your wishlist.');
-        else alert(data.message || 'Could not save');
+        else alert(data?.message || 'Could not save');
     };
 
-    const displayReviews = reviews.length > 0 ? reviews : FIGMA_SAMPLE_REVIEWS;
-    const avgRating = typeof p?.averageRating === 'number' ? p.averageRating : null;
+    const displayReviews = reviews;
+    const computedAvgFromList =
+        displayReviews.length > 0
+            ? displayReviews.reduce((sum, r) => sum + (Number(r.rating) || 0), 0) / displayReviews.length
+            : null;
+    const avgRating =
+        typeof p?.averageRating === 'number' && p.averageRating > 0
+            ? p.averageRating
+            : computedAvgFromList != null && computedAvgFromList > 0
+              ? computedAvgFromList
+              : null;
     const reviewCount = typeof p?.reviewCount === 'number' ? p.reviewCount : displayReviews.length;
+
+    const submitReview = async (e) => {
+        e.preventDefault();
+        if (!FEATURES.REVIEWS || !user || !productId) return;
+        setReviewFeedback('');
+        setReviewBusy(true);
+        try {
+            const r = await fetchWithAuth(`${API}/reviews`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    productId,
+                    rating: reviewRating,
+                    comment: reviewComment.trim(),
+                }),
+            });
+            const data = await jsonFromResponse(r, {});
+            if (!r.ok) {
+                setReviewFeedback(data?.message || 'Could not submit review.');
+                return;
+            }
+            setReviewFeedback('Thank you. Your review will appear after moderation.');
+            setMyReview({ hasReview: true, canReview: false, moderationStatus: 'pending' });
+            setReviewComment('');
+            api.get(`/reviews/product/${encodeURIComponent(productId)}`).then((res) => {
+                if (Array.isArray(res.data)) setReviews(res.data);
+            }).catch(() => {});
+        } catch {
+            setReviewFeedback('Something went wrong.');
+        } finally {
+            setReviewBusy(false);
+        }
+    };
 
     const formatReviewDate = (d) => {
         if (!d) return '';
@@ -162,18 +229,20 @@ export default function ProductDetail() {
                                     className="pd-gallery-figma__img"
                                 />
                             </div>
-                            <div className="pd-thumbs-figma">
-                                {thumbList.map((img, idx) => (
-                                    <button
-                                        key={`${img}-${idx}`}
-                                        type="button"
-                                        className={`pd-thumbs-figma__btn ${mainImage === img ? 'is-active' : ''}`}
-                                        style={{ backgroundImage: `url("${getImageSrc(img) || img}")` }}
-                                        onClick={() => setMainImage(img)}
-                                        aria-label={`View image ${idx + 1}`}
-                                    />
-                                ))}
-                            </div>
+                            {thumbList.length > 1 ? (
+                                <div className="pd-thumbs-figma">
+                                    {thumbList.map((img, idx) => (
+                                        <button
+                                            key={`${img}-${idx}`}
+                                            type="button"
+                                            className={`pd-thumbs-figma__btn ${mainImage === img ? 'is-active' : ''}`}
+                                            style={{ backgroundImage: `url("${getImageSrc(img) || img}")` }}
+                                            onClick={() => setMainImage(img)}
+                                            aria-label={`View image ${idx + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            ) : null}
                         </div>
                     </div>
 
@@ -183,18 +252,28 @@ export default function ProductDetail() {
                             <p className="pd-price-figma">
                                 LKR {Number(p?.price ?? 0).toLocaleString()}
                             </p>
-                            {(avgRating != null && avgRating > 0) && (
-                                <div className="pd-rating-inline" aria-label={`${avgRating.toFixed(1)} stars`}>
-                                    {Array.from({ length: 5 }, (_, i) => (
-                                        <span
-                                            key={i}
-                                            className={`material-symbols-outlined pd-star ${i < Math.round(avgRating) ? 'filled' : ''}`}
-                                            style={{ fontVariationSettings: '"FILL" 1' }}
-                                        >
-                                            star
+                            {FEATURES.REVIEWS && (
+                                <div className="pd-rating-inline" aria-label={avgRating != null ? `${avgRating.toFixed(1)} average` : 'No ratings yet'}>
+                                    {avgRating != null && avgRating > 0 ? (
+                                        <>
+                                            {Array.from({ length: 5 }, (_, i) => (
+                                                <span
+                                                    key={i}
+                                                    className={`material-symbols-outlined pd-star ${i < Math.round(avgRating) ? 'filled' : ''}`}
+                                                    style={{ fontVariationSettings: '"FILL" 1' }}
+                                                >
+                                                    star
+                                                </span>
+                                            ))}
+                                            <span className="pd-rating-inline__count">
+                                                {avgRating.toFixed(1)} · {reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span className="pd-rating-inline__count" style={{ fontWeight: 600, color: 'var(--text-secondary, #64748b)' }}>
+                                            No ratings yet
                                         </span>
-                                    ))}
-                                    <span className="pd-rating-inline__count">({reviewCount} reviews)</span>
+                                    )}
                                 </div>
                             )}
                             <div className="pd-desc-border">
@@ -237,33 +316,117 @@ export default function ProductDetail() {
                             </div>
                         </section>
 
-                        <section className="pd-section-reviews">
+                        {FEATURES.REVIEWS ? (<section className="pd-section-reviews">
                             <h2 className="pd-reviews-heading">Reviews</h2>
+                            {user && myReview?.hasReview && (
+                                <p className="pd-desc-figma" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                    {myReview.moderationStatus === 'pending'
+                                        ? 'Your review is pending moderation and will appear here once approved.'
+                                        : myReview.moderationStatus === 'rejected'
+                                            ? 'Your review was not approved. Contact support if you have questions.'
+                                            : 'Thanks for your feedback!'}
+                                </p>
+                            )}
+                            {user && reviewMeLoaded && !myReview?.hasReview && myReview?.canReview === false && (
+                                <p className="pd-desc-figma" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--text-secondary, #64748b)' }}>
+                                    Only customers who have purchased this product (completed paid order) can leave a star rating and review.
+                                </p>
+                            )}
+                            {user && reviewMeLoaded && !myReview?.hasReview && myReview?.canReview && (
+                                <form onSubmit={submitReview} className="pd-review-form" style={{ marginBottom: '1.25rem', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(148,163,184,0.35)', background: 'rgba(255,255,255,0.6)' }}>
+                                    <p style={{ margin: '0 0 0.75rem', fontWeight: 700, fontSize: '0.9rem' }}>Write a review</p>
+                                    <div style={{ display: 'flex', gap: '0.2rem', marginBottom: '0.75rem' }} role="group" aria-label="Rating (1 to 5 stars)">
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <button
+                                                key={n}
+                                                type="button"
+                                                onClick={() => setReviewRating(n)}
+                                                className="material-symbols-outlined gm-star-rating__btn"
+                                                style={{
+                                                    fontVariationSettings: '"FILL" 1',
+                                                    fontSize: '1.75rem',
+                                                    border: 'none',
+                                                    background: 'none',
+                                                    cursor: 'pointer',
+                                                    color: n <= reviewRating ? '#ca8a04' : '#cbd5e1',
+                                                    padding: '0.15rem',
+                                                }}
+                                                aria-label={`${n} star${n > 1 ? 's' : ''}`}
+                                                aria-pressed={n <= reviewRating}
+                                            >
+                                                star
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <textarea
+                                        className="form-control"
+                                        rows={3}
+                                        placeholder="Share your experience (min. 3 characters)"
+                                        value={reviewComment}
+                                        onChange={(e) => setReviewComment(e.target.value)}
+                                        required
+                                        minLength={3}
+                                        maxLength={2000}
+                                        style={{ width: '100%', marginBottom: '0.75rem', borderRadius: '8px', padding: '0.5rem' }}
+                                    />
+                                    {reviewFeedback && (
+                                        <p
+                                            role="status"
+                                            style={{
+                                                fontSize: '0.9rem',
+                                                fontWeight: 600,
+                                                color: reviewFeedback.includes('Thank you') || reviewFeedback.includes('moderation') || reviewFeedback.includes('pending') ? '#15803d' : '#b91c1c',
+                                                marginBottom: '0.5rem',
+                                                padding: '0.5rem 0.65rem',
+                                                borderRadius: 8,
+                                                background: reviewFeedback.includes('Thank you') ? 'rgba(22, 163, 74, 0.08)' : 'transparent',
+                                            }}
+                                        >
+                                            {reviewFeedback}
+                                        </p>
+                                    )}
+                                    <button type="submit" className="pd-btn-figma pd-btn-figma--primary" disabled={reviewBusy} style={{ fontSize: '0.875rem' }}>
+                                        {reviewBusy ? 'Submitting…' : 'Submit review'}
+                                    </button>
+                                </form>
+                            )}
+                            {!user && (
+                                <p className="pd-desc-figma" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                    <Link to="/login">Sign in</Link> to see if you can leave a review (purchase required).
+                                </p>
+                            )}
+                            {user && !reviewMeLoaded && FEATURES.REVIEWS && (
+                                <p className="pd-desc-figma" style={{ marginBottom: '1rem', fontSize: '0.9rem', color: '#94a3b8' }}>Checking review eligibility…</p>
+                            )}
                             <ul className="pd-reviews-list">
-                                {displayReviews.map((rev) => (
-                                    <li key={rev._id || rev.id} className="pd-review-card">
-                                        <div className="pd-review-card__head">
-                                            <div>
-                                                <p className="pd-review-card__name">{(rev.userName || 'Customer').toUpperCase()}</p>
-                                                <p className="pd-review-card__date">{formatReviewDate(rev.createdAt)}</p>
+                                {displayReviews.length === 0 ? (
+                                    <li className="pd-review-card" style={{ opacity: 0.85 }}>No reviews yet.</li>
+                                ) : (
+                                    displayReviews.map((rev) => (
+                                        <li key={rev._id || rev.id} className="pd-review-card">
+                                            <div className="pd-review-card__head">
+                                                <div>
+                                                    <p className="pd-review-card__name">{(rev.userName || 'Customer').toUpperCase()}</p>
+                                                    <p className="pd-review-card__date">{formatReviewDate(rev.createdAt)}</p>
+                                                </div>
+                                                <div className="pd-review-stars" aria-hidden>
+                                                    {Array.from({ length: 5 }, (_, i) => (
+                                                        <span
+                                                            key={i}
+                                                            className={`material-symbols-outlined ${i < (rev.rating || 0) ? 'filled' : ''}`}
+                                                            style={{ fontVariationSettings: '"FILL" 1', fontSize: '12px' }}
+                                                        >
+                                                            star
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div className="pd-review-stars" aria-hidden>
-                                                {Array.from({ length: 5 }, (_, i) => (
-                                                    <span
-                                                        key={i}
-                                                        className={`material-symbols-outlined ${i < (rev.rating || 0) ? 'filled' : ''}`}
-                                                        style={{ fontVariationSettings: '"FILL" 1', fontSize: '12px' }}
-                                                    >
-                                                        star
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <p className="pd-review-card__text">{rev.comment || '—'}</p>
-                                    </li>
-                                ))}
+                                            <p className="pd-review-card__text">{rev.comment || '—'}</p>
+                                        </li>
+                                    ))
+                                )}
                             </ul>
-                        </section>
+                        </section>) : null}
 
                         <details className="pd-details-more">
                             <summary>More details</summary>
