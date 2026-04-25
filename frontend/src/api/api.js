@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Axios instance pointing to the Spring Boot API
+// Spring Boot API: dev uses Vite proxy `/api`; production set VITE_API_BASE_URL (e.g. https://your-api.onrender.com/api)
 const api = axios.create({
-    baseURL: '/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
     headers: { 'Content-Type': 'application/json' },
 });
 

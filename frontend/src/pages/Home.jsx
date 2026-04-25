@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
-import flashCardsImg from '../Flash cards/1.jpeg';
-import boquetImg from '../boquet/1.jpeg';
-import framesImg from '../frames/1.jpeg';
-import giftBoxImg from '../gift box/1.jpeg';
 import CategoryCarousel from '../components/home/CategoryCarousel';
+import { cleanCaption, cleanCategoryName } from '../utils/displayText';
 
-const FALLBACK_IMAGES = [flashCardsImg, boquetImg, framesImg, giftBoxImg];
+// Category card fallbacks when API has no image (paths under public/photos/)
+const FALLBACK_IMAGES = [
+  '/photos/flashcards/4.jpeg',
+  '/photos/bouquet/gallery/01.jpeg',
+  '/photos/frames/frames_1.jpeg',
+  '/photos/giftbox/1.jpeg',
+];
 
 /** Used only if /api/categories is empty or fails — slugs must match Category documents. */
 const STATIC_CATEGORY_FALLBACK = [
@@ -16,6 +19,12 @@ const STATIC_CATEGORY_FALLBACK = [
   { name: 'Frames', slug: 'frames', tagline: 'Preserve Your Memories', overlay: 'Bestseller' },
   { name: 'Gift Box', slug: 'gift-boxes', tagline: 'Pre-curated Perfection', overlay: 'Popular' },
 ];
+
+function fallbackCategoryNameBySlug(slug, idx) {
+  const normalized = String(slug || '').toLowerCase().trim();
+  const bySlug = STATIC_CATEGORY_FALLBACK.find((c) => (c.slug || '').toLowerCase() === normalized);
+  return bySlug?.name || STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.name || 'Collection';
+}
 
 // Stricter format: local part + @ + domain with at least one dot, sensible length
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
@@ -37,6 +46,13 @@ function isDisposableEmail(email) {
 
 export default function Home() {
   const [shopCategories, setShopCategories] = useState(null);
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [step, setStep] = useState('email'); // 'email' | 'code'
+  const [pendingEmail, setPendingEmail] = useState('');
+  const [sentCode, setSentCode] = useState(''); // when API returns code (e.g. mail not sent), show on screen
+  const [status, setStatus] = useState('idle'); // idle | loading | success | error
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -51,25 +67,25 @@ export default function Home() {
     return () => { cancelled = true; };
   }, []);
 
-  const categoryCards = (shopCategories && shopCategories.length > 0)
-    ? shopCategories.map((cat, idx) => ({
-        ...cat,
-        image: cat.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
-        tagline: cat.tagline || cat.description || STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.tagline || '',
-        overlay: cat.overlay || 'Trending',
-      }))
-    : STATIC_CATEGORY_FALLBACK.map((cat, idx) => ({
-        ...cat,
-        image: FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
-      }));
-
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [step, setStep] = useState('email'); // 'email' | 'code'
-  const [pendingEmail, setPendingEmail] = useState('');
-  const [sentCode, setSentCode] = useState(''); // when API returns code (e.g. mail not sent), show on screen
-  const [status, setStatus] = useState('idle'); // idle | loading | success | error
-  const [message, setMessage] = useState('');
+  const categoryCards = useMemo(
+    () =>
+      shopCategories && shopCategories.length > 0
+        ? shopCategories.map((cat, idx) => ({
+            ...cat,
+            name: cleanCategoryName(cat.name, fallbackCategoryNameBySlug(cat.slug, idx)),
+            image: cat.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
+            tagline: cleanCaption(
+              [cat.tagline, cat.description],
+              STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.tagline || ''
+            ),
+            overlay: cat.overlay ?? 'Trending',
+          }))
+        : STATIC_CATEGORY_FALLBACK.map((cat, idx) => ({
+            ...cat,
+            image: FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
+          })),
+    [shopCategories]
+  );
 
   async function handleSendCode(e) {
     e.preventDefault();
@@ -105,6 +121,7 @@ export default function Home() {
       setMessage('');
       setCode('');
       if (res.data?.code) setSentCode(res.data.code);
+      else setSentCode('');
     } catch (err) {
       setStatus('error');
       setMessage(err.response?.data?.message || 'Could not send code. Please try again.');
@@ -145,6 +162,7 @@ export default function Home() {
       setMessage('We sent a new code to your email.');
       setCode('');
       if (res.data?.code) setSentCode(res.data.code);
+      else setSentCode('');
     } catch (err) {
       setStatus('error');
       setMessage(err.response?.data?.message || 'Could not resend code. Please try again.');
@@ -153,10 +171,11 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero Section with Video Background */}
+      {/* Hero: gradient always visible; video optional (file may be missing in some builds) */}
       <section className="relative w-full overflow-hidden bg-slate-900 md:h-[85vh] h-[70vh] min-h-[320px] flex items-center justify-center">
+        <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950" aria-hidden />
         <video
-          className="w-full h-full object-contain md:object-cover"
+          className="relative z-[1] w-full h-full object-contain md:object-cover"
           autoPlay
           muted
           loop
@@ -228,9 +247,20 @@ export default function Home() {
             </form>
           ) : (
             <>
-              {sentCode && (
+              {sentCode ? (
+                <div className="mb-4 max-w-lg mx-auto rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/40 px-4 py-3 text-center text-sm text-amber-900 dark:text-amber-100">
+                  <p className="font-medium">We could not send email to your address.</p>
+                  <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
+                    The mail server is not configured or SMTP failed. To send codes by email, run the backend with Gmail app password set (<code className="text-xs bg-amber-100 dark:bg-amber-900/80 px-1 rounded">SPRING_MAIL_USERNAME</code> / <code className="text-xs bg-amber-100 dark:bg-amber-900/80 px-1 rounded">SPRING_MAIL_PASSWORD</code>), then restart and try again.
+                  </p>
+                  <p className="mt-3 text-slate-700 dark:text-slate-300">
+                    Temporary code (only if email fails):{' '}
+                    <strong className="text-primary font-mono text-lg tracking-widest">{sentCode}</strong>
+                  </p>
+                </div>
+              ) : (
                 <p className="mb-4 text-center text-slate-600 dark:text-slate-400 text-sm">
-                  Couldn’t send email? Your code: <strong className="text-primary font-mono text-lg tracking-widest">{sentCode}</strong>
+                  Check your inbox and spam folder — the code should arrive within a minute.
                 </p>
               )}
               <form className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto" onSubmit={handleVerify}>
