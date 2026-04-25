@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Sends each user an email on the calendar day before their reminder event (server timezone).
@@ -31,6 +32,9 @@ public class ReminderNotificationService {
 
     @Value("${spring.mail.username:}")
     private String mailFrom;
+
+    @Value("${app.frontend-url:http://localhost:5173}")
+    private String frontendUrl;
 
     public ReminderNotificationService(ReminderRepository reminderRepository,
                                        UserRepository userRepository,
@@ -58,19 +62,32 @@ public class ReminderNotificationService {
         String fromAddr = (mailFrom != null && !mailFrom.isBlank()) ? mailFrom : "noreply@giftmart.com";
 
         for (Reminder r : pending) {
-            Optional<User> userOpt = userRepository.findById(r.getUserId());
+            String uid = r.getUserId();
+            if (uid == null || uid.isBlank()) {
+                continue;
+            }
+            Optional<User> userOpt = userRepository.findById(uid);
             if (userOpt.isEmpty()) {
                 continue;
             }
             User u = userOpt.get();
+            if (Boolean.FALSE.equals(u.getNotifyEventReminders())) {
+                continue;
+            }
             String email = u.getEmail();
             if (email == null || email.isBlank()) {
                 continue;
             }
+            if (u.getUnsubscribeToken() == null || u.getUnsubscribeToken().isBlank()) {
+                u.setUnsubscribeToken(UUID.randomUUID().toString().replace("-", ""));
+                u.setUpdatedAt(new Date());
+                userRepository.save(u);
+            }
+            String unsub = frontendUrl.replaceAll("/$", "") + "/unsubscribe?t=" + u.getUnsubscribeToken() + "&channel=reminders";
 
             String when = formatEventWhen(r.getRemindAt(), zone);
             String subject = "Gift Mart — reminder: " + (r.getTitle() != null ? r.getTitle() : "Event");
-            String body = buildBody(r.getTitle(), r.getMessage(), when);
+            String body = buildBody(r.getTitle(), r.getMessage(), when, unsub);
 
             if (mailSender != null) {
                 try {
@@ -100,7 +117,7 @@ public class ReminderNotificationService {
         return z.format(DateTimeFormatter.ofPattern("EEEE, MMMM d, yyyy 'at' h:mm a", java.util.Locale.ENGLISH));
     }
 
-    private static String buildBody(String title, String message, String when) {
+    private static String buildBody(String title, String message, String when, String unsubscribeUrl) {
         StringBuilder sb = new StringBuilder();
         sb.append("Hi,\n\n");
         sb.append("This is a friendly reminder from Gift Mart.\n\n");
@@ -113,6 +130,9 @@ public class ReminderNotificationService {
         }
         sb.append("\nScheduled for: ").append(when).append('\n');
         sb.append("\n— Gift Mart\n");
+        if (unsubscribeUrl != null && !unsubscribeUrl.isBlank()) {
+            sb.append("\nStop event reminders: ").append(unsubscribeUrl).append('\n');
+        }
         return sb.toString();
     }
 }

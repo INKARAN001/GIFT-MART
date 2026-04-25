@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { FEATURES } from '../config/features';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 
-const API = '/api';
+const API = getApiBaseUrl();
 
 function formatWhen(d) {
   if (!d) return '—';
@@ -34,12 +37,18 @@ export default function Reminders() {
     setLoading(true);
     try {
       const r = await fetchWithAuth(`${API}/reminders`);
-      if (r.ok) setList(await r.json());
+      if (r.ok) {
+        const raw = await jsonFromResponse(r, []);
+        setList(Array.isArray(raw) ? raw : []);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }, [fetchWithAuth]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    if (!FEATURES.REMINDERS) return;
+    load();
+  }, [FEATURES.REMINDERS, load]);
 
   const resetForm = () => {
     setTitle('');
@@ -69,9 +78,9 @@ export default function Reminders() {
       const url = editing ? `${API}/reminders/${editing}` : `${API}/reminders`;
       const method = editing ? 'PUT' : 'POST';
       const r = await fetchWithAuth(url, { method, body: JSON.stringify(body) });
-      const data = await r.json().catch(() => ({}));
+      const data = await jsonFromResponse(r, {});
       if (!r.ok) {
-        setError(data.message || 'Could not save');
+        setError(data?.message || 'Could not save');
         return;
       }
       resetForm();
@@ -95,6 +104,14 @@ export default function Reminders() {
     const r = await fetchWithAuth(`${API}/reminders/${encodeURIComponent(id)}`, { method: 'DELETE' });
     if (r.ok) load();
   };
+
+  if (!FEATURES.REMINDERS) {
+    return (
+      <div style={{ maxWidth: '720px', margin: '0 auto', padding: '2rem' }}>
+        <p style={{ color: '#64748b' }}>Reminders are turned off (feature flag).</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return <div className="page-loading" style={{ minHeight: '50vh' }}>Loading reminders…</div>;
