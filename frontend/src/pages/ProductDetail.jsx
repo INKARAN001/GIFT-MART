@@ -7,14 +7,13 @@ import { getImageSrc } from '../utils/imageUrl';
 import { FEATURES } from '../config/features';
 import { getApiBaseUrl } from '../utils/apiBase';
 import { jsonFromResponse } from '../utils/jsonResponse';
-import { cleanCaption, cleanProductName } from '../utils/displayText';
-import { getProductImageOrFallback } from '../utils/productImageFallback';
 import '../styles/product-detail.css';
 
 const API = getApiBaseUrl();
 
 /** One image per product (listing + detail). When missing, use this placeholder — no extra stock gallery. */
 const PLACEHOLDER_IMAGE = '/placeholder-gift.svg';
+
 export default function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -39,14 +38,8 @@ export default function ProductDetail() {
         const fetchProduct = async () => {
             try {
                 const res = await api.get(`/products/${id}`);
-                const normalized = {
-                    ...res.data,
-                    name: cleanProductName(res.data),
-                    description: cleanCaption([res.data?.description, res.data?.subtitle, res.data?.shortDescription], ''),
-                    image: getProductImageOrFallback(res.data),
-                };
-                setProduct(normalized);
-                const hero = normalized.image || normalized.imageUrl;
+                setProduct(res.data);
+                const hero = res.data.image || res.data.imageUrl;
                 setMainImage(hero || PLACEHOLDER_IMAGE);
             } catch {
                 setMainImage(PLACEHOLDER_IMAGE);
