@@ -6,6 +6,7 @@ import com.giftmart.document.User;
 import com.giftmart.repository.CartRepository;
 import com.giftmart.repository.ProductRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -85,7 +86,7 @@ public class CartController {
 
     @PatchMapping("/items/{productId}")
     public ResponseEntity<?> updateQuantity(@AuthenticationPrincipal User user,
-                                            @PathVariable String productId,
+                                            @PathVariable @NonNull String productId,
                                             @RequestBody Map<String, Object> body) {
         if (user == null) return ResponseEntity.status(401).build();
         int quantity = parseInt(body.get("quantity"), 0);
@@ -115,7 +116,7 @@ public class CartController {
 
     @DeleteMapping("/items/{productId}")
     public ResponseEntity<?> removeItem(@AuthenticationPrincipal User user,
-                                        @PathVariable String productId) {
+                                        @PathVariable @NonNull String productId) {
         if (user == null) return ResponseEntity.status(401).build();
         Cart cart = cartRepository.findByUserId(user.getId()).orElse(null);
         if (cart == null) return ResponseEntity.ok(emptyCartResponse());
@@ -148,7 +149,11 @@ public class CartController {
         double subtotal = 0;
         int itemCount = 0;
         for (Cart.CartLine line : cart.getItems()) {
-            Optional<Product> opt = productRepository.findById(line.getProductId());
+            String linePid = line.getProductId();
+            if (linePid == null || linePid.isBlank()) {
+                continue;
+            }
+            Optional<Product> opt = productRepository.findById(linePid);
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("productId", line.getProductId());
             row.put("quantity", line.getQuantity());

@@ -8,6 +8,7 @@ import com.giftmart.repository.CartRepository;
 import com.giftmart.repository.ProductRepository;
 import com.giftmart.repository.WishlistRepository;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,9 +52,13 @@ public class WishlistController {
         Wishlist w = getOrCreate(user.getId());
         List<Map<String, Object>> items = new ArrayList<>();
         for (String pid : w.getProductIds()) {
+            if (pid == null || pid.isBlank()) {
+                continue;
+            }
+            String productKey = Objects.requireNonNull(pid);
             Map<String, Object> row = new LinkedHashMap<>();
-            row.put("productId", pid);
-            productRepository.findById(pid).ifPresentOrElse(
+            row.put("productId", productKey);
+            productRepository.findById(productKey).ifPresentOrElse(
                     p -> row.put("product", p),
                     () -> row.put("product", null)
             );
@@ -88,7 +93,7 @@ public class WishlistController {
 
     @DeleteMapping("/items/{productId}")
     public ResponseEntity<?> remove(@AuthenticationPrincipal User user,
-                                    @PathVariable String productId) {
+                                    @PathVariable @NonNull String productId) {
         if (user == null) return ResponseEntity.status(401).build();
         Wishlist w = wishlistRepository.findByUserId(user.getId()).orElse(null);
         if (w == null) return ResponseEntity.ok(Map.of("message", "Removed"));

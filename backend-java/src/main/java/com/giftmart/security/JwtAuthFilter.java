@@ -1,6 +1,5 @@
 package com.giftmart.security;
 
-import com.giftmart.document.User;
 import com.giftmart.repository.UserRepository;
 import com.giftmart.util.JwtUtil;
 import jakarta.servlet.FilterChain;
@@ -11,6 +10,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -32,8 +32,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         // get the Authorization header
         String authHeader = request.getHeader("Authorization");
 
@@ -54,6 +54,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // get user id from token and find user in database
         String userId = jwtUtil.getUserIdFromToken(token);
+        if (userId == null || userId.isBlank()) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         userRepository.findById(userId).ifPresent(user -> {
             // set user role (ROLE_USER or ROLE_ADMIN)
             String role = "ROLE_" + (user.getRole() != null ? user.getRole().toUpperCase() : "USER");

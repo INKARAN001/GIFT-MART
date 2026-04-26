@@ -16,11 +16,11 @@ public class Category {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "name_1", unique = true)
     private String name;
 
     /** URL segment for /products/{slug} — unique */
-    @Indexed(unique = true)
+    @Indexed(name = "slug_1", unique = true)
     private String slug;
 
     private String description;

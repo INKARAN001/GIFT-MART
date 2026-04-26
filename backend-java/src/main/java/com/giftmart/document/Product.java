@@ -19,12 +19,6 @@ public class Product {
     @JsonProperty("_id")
     private String id;
     private String name;
-    /**
-     * Legacy DB field kept for backward compatibility with older documents.
-     * New writes should use {@code name}; reads can fall back to this value.
-     */
-    @Field("productName")
-    private String legacyProductName;
     private String description;
     /** Name matches existing Mongo index so startup auto-creation does not conflict with legacy {@code category_1}. */
     @Indexed(name = "category_1")
@@ -104,12 +98,11 @@ public class Product {
     }
 
     public String getName() {
-        return name != null ? name : legacyProductName;
+        return name;
     }
 
     public void setName(String name) {
         this.name = name;
-        this.legacyProductName = name;
     }
 
     public String getDescription() {

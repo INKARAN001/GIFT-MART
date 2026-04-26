@@ -14,7 +14,7 @@ public class NewsletterSubscriber {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "email_1", unique = true)
     private String email;
     private Date subscribedAt;
 

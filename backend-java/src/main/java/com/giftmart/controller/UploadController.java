@@ -46,7 +46,8 @@ public class UploadController {
             }
 
             // generate a unique filename
-            String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
+            String rawName = file.getOriginalFilename();
+            String originalFileName = rawName != null ? StringUtils.cleanPath(rawName) : "";
             String fileExtension = "";
             if (originalFileName.contains(".")) {
                 fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));

@@ -5,6 +5,7 @@ import com.giftmart.repository.ProductRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -112,7 +113,7 @@ public class ProductController {
 
     // get single product by id
     @GetMapping("/{id}")
-    public ResponseEntity<Product> getOne(@PathVariable String id) {
+    public ResponseEntity<Product> getOne(@PathVariable @NonNull String id) {
         return productRepository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

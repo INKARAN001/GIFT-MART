@@ -16,7 +16,7 @@ public class Cart {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed(unique = true)
+    @Indexed(name = "userId", unique = true)
     private String userId;
 
     private List<CartLine> items = new ArrayList<>();

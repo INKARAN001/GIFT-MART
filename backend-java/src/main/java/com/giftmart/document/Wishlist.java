@@ -16,7 +16,8 @@ public class Wishlist {
     @JsonProperty("_id")
     private String id;
 
-    @Indexed(unique = true)
+    /** Name matches existing index in older DBs (Spring default was field name, not Mongo's userId_1). */
+    @Indexed(name = "userId", unique = true)
     private String userId;
 
     private List<String> productIds = new ArrayList<>();
