@@ -1,0 +1,27 @@
+# Copy this file to application-local.properties and fill in your Gmail details.
+# application-local.properties is in .gitignore so your password is never committed.
+#
+# To send verification codes via Gmail:
+# 1. Turn on 2-Step Verification: https://myaccount.google.com/security
+# 2. Create an App Password: https://myaccount.google.com/apppasswords
+#    - Select app: Mail, Device: Other (e.g. "Gift Mart"), then Generate
+#    - Use the 16-character password below (no spaces)
+#
+spring.mail.username=artistaathi001@gmail.com
+spring.mail.password="onubhbaircdpcqdd"
+
+# Checkout requires Stripe (card only — no cash on delivery).
+# If Stripe does not list Sri Lanka for your business, use a supported-country Stripe account
+# and charge in USD (default). Set the going rate: LKR exchanged for 1 USD.
+stripe.secret.key=sk_test_51TKWrLP64bohNDqgDJzmaeRnz2w4emwW63s81zWSNhZz5vPEcicELYm7OnmZEghptejlIXnNy69XBqyGiD1I0XKp003KNSZxd5
+stripe.charge.currency=usd
+stripe.lkr-per-usd=320
+# Or: STRIPE_SECRET_KEY, STRIPE_CHARGE_CURRENCY, STRIPE_LKR_PER_USD
+
+# Google Maps: enable Distance Matrix API + Geocoding API for driving distance / address lookup.
+# Or set env: GOOGLE_MAPS_API_KEY
+google.maps.api.key=
+
+# Optional: when Distance Matrix fails, avoid blocking checkout — flat LKR shipping and/or fixed km for tiers (see application.properties).
+# giftmart.shipping.distance-matrix-fallback-km=0
+# giftmart.shipping.matrix-failure-flat-lkr=0

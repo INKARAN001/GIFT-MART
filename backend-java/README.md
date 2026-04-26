@@ -12,11 +12,14 @@ This is the **Java backend** for Gift Mart. It uses the **same MongoDB database*
 
 ### 1. Configure environment
 
-Create `src/main/resources/application-local.properties` (optional) or set environment variables:
+Create `src/main/resources/application-local.properties` (optional), or set environment variables. A full list of variable names is in **`.env.example`** (repo root: `backend-java/.env.example`) — Spring does not load `.env` automatically; use exported env vars, Render, or Docker.
 
 - `MONGODB_URI` – MongoDB connection (default: `mongodb://localhost:27017/gift-mart`)
 - `JWT_SECRET` – Secret for JWT (use a long random string in production)
 - `FRONTEND_URL` – Frontend origin for CORS (default: `http://localhost:3000`)
+- `SPRING_PROFILES_ACTIVE` – `dev` (default) or `prod` (see `application-prod.properties`)
+
+Monorepo docs: **`README.md`** and **`SPRINT_4_PLAN.md`** at the repository root.
 
 ### 2. Run the application
 
@@ -25,7 +28,7 @@ cd backend-java
 mvn spring-boot:run
 ```
 
-The API runs at **http://localhost:5000**. On first run, it creates an admin user and sample products if the database is empty.
+The API runs at **http://localhost:5000**. On first run, it creates an admin user, default categories, and sample products **only if those collections are empty**. Restarting the backend does **not** wipe admin changes to products or categories — data lives in MongoDB until you change it there or drop the database.
 
 ### 3. Use with the React frontend
 

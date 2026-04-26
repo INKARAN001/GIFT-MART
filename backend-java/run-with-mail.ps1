@@ -5,7 +5,8 @@
 
 # Use quotes so PowerShell treats these as strings (required!)
 $env:SPRING_MAIL_USERNAME = "artistaathi001@gmail.com"
-$env:SPRING_MAIL_PASSWORD = "ludwpzeaaavfkmiz"
+# Must be in quotes — otherwise PowerShell treats the value as a command, not a string, and mail auth fails.
+$env:SPRING_MAIL_PASSWORD = "onubhbaircdpcqdd"
 
 Write-Host "Starting backend with mail as: $env:SPRING_MAIL_USERNAME"
 mvn spring-boot:run
