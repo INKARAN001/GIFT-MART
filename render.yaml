@@ -1,0 +1,31 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# Deploy: connect this repo in Render → New Blueprint → select render.yaml
+version: "1"
+services:
+  - type: web
+    name: giftmart-api
+    runtime: docker
+    region: singapore
+    plan: free
+    dockerfilePath: ./backend-java/Dockerfile
+    dockerContext: ./backend-java
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_CHARGE_CURRENCY
+        value: usd
+      - key: STRIPE_LKR_PER_USD
+        value: "320"
+      - key: GOOGLE_MAPS_API_KEY
+        sync: false
+      - key: SPRING_MAIL_USERNAME
+        sync: false
+      - key: SPRING_MAIL_PASSWORD
+        sync: false
