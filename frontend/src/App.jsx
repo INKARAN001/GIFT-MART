@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Home from './pages/Home';
@@ -45,6 +45,18 @@ function AdminRoute({ children }) {
   return children;
 }
 
+function ScrollToTopOnRouteChange() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname]);
+
+  return null;
+}
+
 export default function App() {
   // Show splash once per browser session
   const [splash, setSplash] = useState(
@@ -59,54 +71,57 @@ export default function App() {
   if (splash) return <SplashScreen onDone={handleSplashDone} />;
 
   return (
-    <Routes>
-      {/* User routes (with Navbar + footer) */}
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="products" element={<Products />} />
-        <Route path="products/:categorySlug" element={<CategoryProductsPage />} />
-        <Route path="about-us" element={<AboutUs />} />
-        <Route path="privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="terms-of-service" element={<TermsOfService />} />
-        <Route path="track-order" element={<TrackOrder />} />
-        <Route path="feedback" element={<Feedback />} />
-        <Route path="product/:id" element={<ProductDetail />} />
-        <Route path="login" element={<Login />} />
-        <Route path="reset-password" element={<ResetPassword />} />
-        <Route path="profile" element={
-          <ProtectedRoute><Profile /></ProtectedRoute>
-        } />
-        <Route path="cart" element={<Cart />} />
-        <Route path="amount-calculator" element={
-          <ProtectedRoute><AmountCalculator /></ProtectedRoute>
-        } />
-        <Route path="checkout" element={
-          <ProtectedRoute><Checkout /></ProtectedRoute>
-        } />
-        <Route path="order-confirmation/:orderId" element={
-          <ProtectedRoute><OrderConfirmation /></ProtectedRoute>
-        } />
-        <Route path="unsubscribe" element={<Unsubscribe />} />
-        <Route path="wishlist" element={
-          <ProtectedRoute><Wishlist /></ProtectedRoute>
-        } />
-        <Route path="reminders" element={
-          <ProtectedRoute>
-            {FEATURES.REMINDERS ? <Reminders /> : <Navigate to="/profile" replace />}
-          </ProtectedRoute>
-        } />
-      </Route>
+    <>
+      <ScrollToTopOnRouteChange />
+      <Routes>
+        {/* User routes (with Navbar + footer) */}
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Home />} />
+          <Route path="products" element={<Products />} />
+          <Route path="products/:categorySlug" element={<CategoryProductsPage />} />
+          <Route path="about-us" element={<AboutUs />} />
+          <Route path="privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="terms-of-service" element={<TermsOfService />} />
+          <Route path="track-order" element={<TrackOrder />} />
+          <Route path="feedback" element={<Feedback />} />
+          <Route path="product/:id" element={<ProductDetail />} />
+          <Route path="login" element={<Login />} />
+          <Route path="reset-password" element={<ResetPassword />} />
+          <Route path="profile" element={
+            <ProtectedRoute><Profile /></ProtectedRoute>
+          } />
+          <Route path="cart" element={<Cart />} />
+          <Route path="amount-calculator" element={
+            <ProtectedRoute><AmountCalculator /></ProtectedRoute>
+          } />
+          <Route path="checkout" element={
+            <ProtectedRoute><Checkout /></ProtectedRoute>
+          } />
+          <Route path="order-confirmation/:orderId" element={
+            <ProtectedRoute><OrderConfirmation /></ProtectedRoute>
+          } />
+          <Route path="unsubscribe" element={<Unsubscribe />} />
+          <Route path="wishlist" element={
+            <ProtectedRoute><Wishlist /></ProtectedRoute>
+          } />
+          <Route path="reminders" element={
+            <ProtectedRoute>
+              {FEATURES.REMINDERS ? <Reminders /> : <Navigate to="/profile" replace />}
+            </ProtectedRoute>
+          } />
+        </Route>
 
-      {/* Admin — full-screen, no Navbar */}
-      <Route path="/admin" element={
-        <AdminRoute><AdminPanel /></AdminRoute>
-      } />
-      <Route path="/admin/*" element={
-        <AdminRoute><AdminPanel /></AdminRoute>
-      } />
+        {/* Admin — full-screen, no Navbar */}
+        <Route path="/admin" element={
+          <AdminRoute><AdminPanel /></AdminRoute>
+        } />
+        <Route path="/admin/*" element={
+          <AdminRoute><AdminPanel /></AdminRoute>
+        } />
 
-      {/* Unknown routes → animated 404 */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* Unknown routes → animated 404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }

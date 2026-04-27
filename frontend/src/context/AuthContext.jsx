@@ -1,8 +1,10 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 
 const AuthContext = createContext(null);
 
-const API = '/api';
+const API = getApiBaseUrl();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -32,8 +34,11 @@ export function AuthProvider({ children }) {
       return;
     }
     fetchWithAuth(`${API}/auth/me`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
+      .then(async (r) => {
+        if (!r.ok) return null;
+        return jsonFromResponse(r, null);
+      })
+      .then((data) => {
         if (data?.user) setUser(data.user);
         setLoading(false);
       })
@@ -47,8 +52,8 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Login failed');
+    const data = await jsonFromResponse(res, {});
+    if (!res.ok) throw new Error(data?.message || 'Login failed');
     localStorage.setItem('token', data.token);
     setUser(data.user);
     return data; // return so Login page can check role for admin redirect
@@ -61,8 +66,8 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password, phone })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || data.errors?.[0]?.msg || 'Registration failed');
+    const data = await jsonFromResponse(res, {});
+    if (!res.ok) throw new Error(data?.message || data?.errors?.[0]?.msg || 'Registration failed');
     if (data.requiresVerification) {
       return data; // caller shows verify step; no token yet
     }
@@ -80,8 +85,8 @@ export function AuthProvider({ children }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim().toLowerCase(), code: code.trim().replace(/\s/g, '') })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Verification failed');
+    const data = await jsonFromResponse(res, {});
+    if (!res.ok) throw new Error(data?.message || 'Verification failed');
     localStorage.setItem('token', data.token);
     setUser(data.user);
     return data;

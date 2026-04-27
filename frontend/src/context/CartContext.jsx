@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from './AuthContext';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 import {
   readGuestCart,
   writeGuestCart,
   clearGuestCart,
   guestCartTotals,
 } from '../utils/guestCartStorage';
+
+const API = getApiBaseUrl();
 
 const CartContext = createContext(null);
 
@@ -24,9 +28,9 @@ export function CartProvider({ children }) {
   }, []);
 
   const loadServerCart = useCallback(async () => {
-    const r = await fetchWithAuth('/api/cart');
+    const r = await fetchWithAuth(`${API}/cart`);
     if (r.ok) {
-      const data = await r.json();
+      const data = await jsonFromResponse(r, { items: [], subtotal: 0, itemCount: 0 });
       applyServerPayload(data);
     }
   }, [fetchWithAuth, applyServerPayload]);
@@ -36,7 +40,7 @@ export function CartProvider({ children }) {
     for (const line of guestItems) {
       const pid = line.productId != null ? String(line.productId).trim() : '';
       if (!pid) continue;
-      await fetchWithAuth('/api/cart/items', {
+      await fetchWithAuth(`${API}/cart/items`, {
         method: 'POST',
         body: JSON.stringify({ productId: pid, quantity: line.quantity || 1 })
       });
@@ -96,12 +100,12 @@ export function CartProvider({ children }) {
     const qty = Math.max(1, quantity);
 
     if (user) {
-      const r = await fetchWithAuth('/api/cart/items', {
+      const r = await fetchWithAuth(`${API}/cart/items`, {
         method: 'POST',
         body: JSON.stringify({ productId: pid, quantity: qty })
       });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) return { ok: false, message: data.message || 'Could not add to cart' };
+      const data = await jsonFromResponse(r, {});
+      if (!r.ok) return { ok: false, message: data?.message || 'Could not add to cart' };
       applyServerPayload(data);
       return { ok: true };
     }
@@ -131,12 +135,12 @@ export function CartProvider({ children }) {
     if (!pid) return { ok: false, message: 'Invalid product' };
     const qty = Math.max(1, quantity);
     if (user) {
-      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(pid)}`, {
+      const r = await fetchWithAuth(`${API}/cart/items/${encodeURIComponent(pid)}`, {
         method: 'PATCH',
         body: JSON.stringify({ quantity: qty })
       });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) return { ok: false, message: data.message || 'Could not update' };
+      const data = await jsonFromResponse(r, {});
+      if (!r.ok) return { ok: false, message: data?.message || 'Could not update' };
       applyServerPayload(data);
       return { ok: true };
     }
@@ -152,9 +156,9 @@ export function CartProvider({ children }) {
     const pid = productId != null ? String(productId).trim() : '';
     if (!pid) return { ok: false, message: 'Invalid product' };
     if (user) {
-      const r = await fetchWithAuth(`/api/cart/items/${encodeURIComponent(pid)}`, { method: 'DELETE' });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) return { ok: false, message: data.message || 'Could not remove' };
+      const r = await fetchWithAuth(`${API}/cart/items/${encodeURIComponent(pid)}`, { method: 'DELETE' });
+      const data = await jsonFromResponse(r, {});
+      if (!r.ok) return { ok: false, message: data?.message || 'Could not remove' };
       applyServerPayload(data);
       return { ok: true };
     }

@@ -626,6 +626,23 @@ select {
   border-color: rgba(201, 162, 39, 0.5);
 }
 
+.product-card--expanded {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg), 0 8px 28px rgba(95, 158, 160, 0.18);
+}
+
+.product-card--expanded:hover {
+  border-color: var(--primary-color, #5f9ea0);
+}
+
+.product-card-expanded-panel {
+  border-top: 1px solid var(--border-color);
+  padding: 1rem 1.5rem 1.35rem;
+  margin: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, var(--page-gold-warm) 55%);
+  text-align: left;
+}
+
 .product-card:hover img {
   transform: scale(1.08);
 }
@@ -1541,4 +1558,192 @@ select.form-control {
 
 .cursor-default {
   cursor: default;
+}
+
+/* Loading states, skeletons, checkout stepper */
+.page-loading--spinner {
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gm-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid rgba(15, 23, 42, 0.12);
+  border-top-color: var(--gold-muted, #c9a227);
+  border-radius: 50%;
+  animation: gm-spin 0.75s linear infinite;
+}
+
+@keyframes gm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.gm-skeleton {
+  background: linear-gradient(
+    90deg,
+    #f1f5f9 0%,
+    #e8ecf1 50%,
+    #f1f5f9 100%
+  );
+  background-size: 200% 100%;
+  animation: gm-shimmer 1.2s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes gm-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.gm-card-surface {
+  background: var(--card-bg, #fff);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.gm-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.gm-stepper__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  text-align: center;
+  position: relative;
+}
+
+.gm-stepper__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 14px;
+  left: calc(50% + 18px);
+  right: calc(-50% + 18px);
+  height: 2px;
+  background: #e2e8f0;
+  z-index: 0;
+}
+
+.gm-stepper__item--done:not(:last-child)::after,
+.gm-stepper__item--active:not(:last-child)::after {
+  background: linear-gradient(90deg, var(--gold-muted, #5f9ea0), #cbd5e1);
+}
+
+.gm-stepper__circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  z-index: 1;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.gm-stepper__item--active .gm-stepper__circle {
+  border-color: var(--gold-muted, #5f9ea0);
+  background: linear-gradient(135deg, var(--gold-light, #e8c547) 0%, var(--gold-muted, #5f9ea0) 100%);
+  color: var(--charcoal, #1e293b);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.12);
+}
+
+.gm-stepper__item--done .gm-stepper__circle {
+  border-color: #0d9488;
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.gm-stepper__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+  max-width: 90px;
+  line-height: 1.2;
+}
+
+.gm-stepper__item--active .gm-stepper__label {
+  color: #0f172a;
+}
+
+.gm-checkout-processing {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.gm-order-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.gm-order-badge--processing {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.gm-order-badge--shipped {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.gm-order-badge--out {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.gm-order-badge--delivered {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.gm-order-badge--default {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.gm-star-rating__btn {
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.gm-star-rating__btn:hover:not(:disabled) {
+  transform: scale(1.12);
 }
