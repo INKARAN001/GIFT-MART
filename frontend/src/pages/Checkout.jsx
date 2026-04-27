@@ -447,14 +447,27 @@ export default function Checkout() {
           clientSecret,
           appearance: { theme: 'stripe' },
         });
-        const paymentElement = elements.create('payment', {
-          layout: 'accordion',
-          wallets: { applePay: 'never', googlePay: 'never' },
+        const cardElement = elements.create('card', {
+          hidePostalCode: true,
+          style: {
+            base: {
+              fontSize: '16px',
+              color: '#334155',
+              fontFamily: '"Inter", sans-serif',
+              '::placeholder': {
+                color: '#94a3b8',
+              },
+            },
+            invalid: {
+              color: '#ef4444',
+              iconColor: '#ef4444',
+            },
+          },
         });
-        paymentElement.mount(mountEl);
+        cardElement.mount(mountEl);
         stripeRef.current = stripe;
         elementsRef.current = elements;
-        payElementRef.current = paymentElement;
+        payElementRef.current = cardElement;
       } catch (e) {
         setErr('Failed to load Stripe. Set VITE_STRIPE_PUBLISHABLE_KEY in .env');
       }
@@ -624,12 +637,19 @@ export default function Checkout() {
     submitLockRef.current = true;
     setSubmitting(true);
     try {
-      const { error, paymentIntent } = await stripeRef.current.confirmPayment({
-        elements: elementsRef.current,
-        redirect: 'if_required',
-        confirmParams: {
-          return_url: `${window.location.origin}/profile`,
-        },
+      const { error, paymentIntent } = await stripeRef.current.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: payElementRef.current,
+          billing_details: {
+            address: {
+              line1: shipping.street,
+              city: shipping.city,
+              state: shipping.state,
+              postal_code: shipping.zip,
+              country: 'LK',
+            }
+          }
+        }
       });
       if (error) {
         setErr(error.message || 'Payment failed.');
@@ -932,7 +952,7 @@ export default function Checkout() {
             )}
             {clientSecret && STRIPE_PK && (
               <div style={{ marginTop: '1rem', minHeight: intentLoading ? 120 : undefined }}>
-                <div ref={paymentMountRef} id="payment-element" />
+                <div ref={paymentMountRef} id="payment-element" style={{ padding: '0.85rem', border: '1px solid #cbd5e1', borderRadius: '0.5rem', background: '#fff' }} />
               </div>
             )}
           </section>
