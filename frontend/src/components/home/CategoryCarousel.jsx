@@ -3,6 +3,19 @@ import { Link } from 'react-router-dom';
 import { displayCategoryLabel } from '../../utils/categoryLabel';
 import { getImageSrc } from '../../utils/imageUrl';
 
+/** Matches overlay-badge-* rules in tailwind.css */
+const OVERLAY_BADGE_VARIANTS = new Set(['trending', 'new', 'bestseller', 'popular']);
+
+function overlayBadgeVariant(cat) {
+  const raw = cat?.overlay != null && String(cat.overlay).trim() !== '' ? String(cat.overlay) : 'Trending';
+  const normalized = raw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  return OVERLAY_BADGE_VARIANTS.has(normalized) ? normalized : 'trending';
+}
+
+function overlayBadgeLabel(cat) {
+  return cat?.overlay != null && String(cat.overlay).trim() !== '' ? String(cat.overlay) : 'Trending';
+}
+
 /**
  * Curated categories — horizontal carousel with snap, arrows, and dots.
  */
@@ -39,6 +52,8 @@ export default function CategoryCarousel({ categoryCards }) {
     setActive(best);
   }, [categoryCards.length]);
 
+  const carouselDeckKey = categoryCards.map((c) => c.slug || c.id || '').join('|');
+
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
@@ -48,7 +63,7 @@ export default function CategoryCarousel({ categoryCards }) {
     el.addEventListener('scroll', onScroll, { passive: true });
     updateActiveFromScroll();
     return () => el.removeEventListener('scroll', onScroll);
-  }, [updateActiveFromScroll, categoryCards]);
+  }, [updateActiveFromScroll, carouselDeckKey]);
 
   const goDir = (dir) => {
     const n = categoryCards.length;
@@ -124,8 +139,8 @@ export default function CategoryCarousel({ categoryCards }) {
                 alt={displayCategoryLabel(cat.name)}
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
               />
-              <span className={`overlay-badge overlay-badge-${(cat.overlay || 'Trending').toLowerCase()}`}>
-                {cat.overlay || 'Trending'}
+              <span className={`overlay-badge overlay-badge-${overlayBadgeVariant(cat)}`}>
+                {overlayBadgeLabel(cat)}
               </span>
               <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
             </div>

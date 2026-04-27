@@ -3,7 +3,10 @@ import api from '../../api/api';
 import { getImageSrc } from '../../utils/imageUrl';
 import { exportInventoryPdf } from './exportInventoryPdf';
 
-const API = '/api';
+import { getApiBaseUrl } from '../../utils/apiBase';
+import { jsonFromResponse } from '../../utils/jsonResponse';
+
+const API = getApiBaseUrl();
 
 function enrichRow(p) {
   const sold = p.unitsSold ?? 0;
@@ -75,7 +78,7 @@ export default function InventorySection({ fetchWithAuth }) {
     setLoading(true);
     try {
       const r = await fetchWithAuth(`${API}/admin/products`);
-      if (r.ok) setProducts(await r.json());
+      if (r.ok) setProducts(await jsonFromResponse(r, []));
     } catch {
       /* ignore */
     }
@@ -325,8 +328,8 @@ export default function InventorySection({ fetchWithAuth }) {
                     body: fd
                   });
                   if (res.ok) {
-                    const data = await res.json();
-                    setForm((f) => ({ ...f, image: data.url }));
+                    const data = await jsonFromResponse(res, {});
+                    setForm((f) => ({ ...f, image: data?.url }));
                   } else {
                     alert('Image upload failed.');
                     e.target.value = null;

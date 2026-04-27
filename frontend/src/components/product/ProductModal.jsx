@@ -5,6 +5,10 @@ import StarRating from './StarRating';
 import { displayCategoryLabel } from '../../utils/categoryLabel';
 import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
+import { getApiBaseUrl } from '../../utils/apiBase';
+import { jsonFromResponse } from '../../utils/jsonResponse';
+
+const API = getApiBaseUrl();
 
 export default function ProductModal({ product, onClose }) {
     const navigate = useNavigate();
@@ -49,13 +53,13 @@ export default function ProductModal({ product, onClose }) {
             return;
         }
         if (!pid) return;
-        const r = await fetchWithAuth('/api/wishlist/items', {
+        const r = await fetchWithAuth(`${API}/wishlist/items`, {
             method: 'POST',
             body: JSON.stringify({ productId: pid })
         });
-        const data = await r.json().catch(() => ({}));
+        const data = await jsonFromResponse(r, {});
         if (r.ok) alert('Saved to your wishlist.');
-        else alert(data.message || 'Could not save');
+        else alert(data?.message || 'Could not save');
     };
 
     return (

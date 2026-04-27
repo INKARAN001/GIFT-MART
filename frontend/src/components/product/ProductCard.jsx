@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getImageSrc } from '../../utils/imageUrl';
 import { displayCategoryLabel } from '../../utils/categoryLabel';
 import StarRating from './StarRating';
 import { useCart } from '../../context/CartContext';
 
-export default function ProductCard({ product, onProductClick, overlay }) {
+export default function ProductCard({ product, expanded, onProductClick, overlay }) {
     const { addToCart } = useCart();
     const [adding, setAdding] = useState(false);
     const [cartHint, setCartHint] = useState('');
@@ -35,27 +36,49 @@ export default function ProductCard({ product, onProductClick, overlay }) {
         }
     };
 
+    const descriptionText = (product.shortDescription || product.description || '').trim();
+    const descriptionDisplay =
+        descriptionText ||
+        'Premium gift-ready packaging. Open the full page for more photos and customer reviews.';
+
     return (
         <div
-            className="product-card"
+            className={`product-card${expanded ? ' product-card--expanded' : ''}`}
             role="button"
             tabIndex={0}
-            onClick={() => onProductClick?.(product)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onProductClick?.(product); } }}
-            style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--page-gold-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow)', border: '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}
+            aria-expanded={expanded}
+            aria-label={expanded ? `${product.name}, details open. Press Enter to collapse.` : `${product.name}. Press Enter to show details.`}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onProductClick?.(product);
+                }
+            }}
+            style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--page-gold-light)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow)', border: expanded ? '2px solid var(--primary-color, #5F9EA0)' : '1px solid var(--border-color)', overflow: 'hidden', cursor: 'pointer', position: 'relative', transition: 'border-color 0.2s ease, box-shadow 0.2s ease' }}
         >
             {overlay && (
-                <span className={`overlay-badge overlay-badge-${overlay.toLowerCase()}`} style={{ top: '12px', left: '12px' }}>
+                <span
+                    className={`overlay-badge overlay-badge-${overlay.toLowerCase()}`}
+                    style={{ top: '12px', left: '12px', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); onProductClick?.(product); }}
+                >
                     {overlay}
                 </span>
             )}
             {product.customizable && (
-                <div className="product-card-badge" style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, background: 'linear-gradient(135deg, #5F9EA0 0%, #4B8A8C 100%)', color: '#fff', padding: '4px 10px', borderRadius: 'var(--radius)', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <div
+                    className="product-card-badge"
+                    style={{ position: 'absolute', top: '16px', right: '16px', zIndex: 10, background: 'linear-gradient(135deg, #5F9EA0 0%, #4B8A8C 100%)', color: '#fff', padding: '4px 10px', borderRadius: 'var(--radius)', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', cursor: 'pointer' }}
+                    onClick={(e) => { e.stopPropagation(); onProductClick?.(product); }}
+                >
                     Customizable
                 </div>
             )}
             
-            <div style={{ position: 'relative', width: '100%', paddingTop: '100%', overflow: 'hidden', background: 'var(--page-gold-warm)' }}>
+            <div
+                style={{ position: 'relative', width: '100%', paddingTop: '100%', overflow: 'hidden', background: 'var(--page-gold-warm)' }}
+                onClick={(e) => { e.stopPropagation(); onProductClick?.(product); }}
+            >
                 {product.image ? (
                     <img 
                         src={getImageSrc(product.image)} 
@@ -70,7 +93,14 @@ export default function ProductCard({ product, onProductClick, overlay }) {
                 </div>
             </div>
 
-            <div className="product-card-body" style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div
+                className="product-card-body"
+                style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column' }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    if (!expanded) onProductClick?.(product);
+                }}
+            >
                 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
                     {displayCategoryLabel(product.category)}
                 </span>
@@ -117,6 +147,56 @@ export default function ProductCard({ product, onProductClick, overlay }) {
                     ) : null}
                 </div>
             </div>
+
+            {expanded && (
+                <div className="product-card-expanded-panel" onClick={(e) => e.stopPropagation()}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', margin: '0 0 0.5rem' }}>
+                        Rating &amp; details
+                    </p>
+                    <div style={{ marginBottom: '0.65rem' }}>
+                        <StarRating averageRating={product.averageRating ?? product.rating} reviewCount={product.reviewCount} />
+                    </div>
+                    <p
+                        style={{
+                            fontSize: '0.9rem',
+                            color: 'var(--text-secondary)',
+                            lineHeight: 1.55,
+                            margin: '0 0 0.85rem',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 6,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                        }}
+                    >
+                        {descriptionDisplay}
+                    </p>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--gold-muted, #5F9EA0)' }}>
+                            LKR {product.price != null ? Number(product.price).toLocaleString() : '—'}
+                        </span>
+                    </div>
+                    {pid ? (
+                        <Link
+                            to={`/product/${pid}`}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                fontSize: '0.85rem',
+                                fontWeight: 700,
+                                color: 'var(--primary-color, #5F9EA0)',
+                                textDecoration: 'none',
+                            }}
+                        >
+                            Full page &amp; reviews
+                            <span className="material-symbols-outlined" style={{ fontSize: '1.1rem' }} aria-hidden>
+                                arrow_forward
+                            </span>
+                        </Link>
+                    ) : null}
+                </div>
+            )}
             
             {/* Adding hover zoom effect with embedded CSS to ensure functionality without extra files */}
             <style>{`

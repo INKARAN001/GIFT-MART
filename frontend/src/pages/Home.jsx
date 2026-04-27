@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api/api';
 import CategoryCarousel from '../components/home/CategoryCarousel';
-import { cleanCaption, cleanCategoryName } from '../utils/displayText';
 
 // Category card fallbacks when API has no image (paths under public/photos/)
 const FALLBACK_IMAGES = [
@@ -19,12 +18,6 @@ const STATIC_CATEGORY_FALLBACK = [
   { name: 'Frames', slug: 'frames', tagline: 'Preserve Your Memories', overlay: 'Bestseller' },
   { name: 'Gift Box', slug: 'gift-boxes', tagline: 'Pre-curated Perfection', overlay: 'Popular' },
 ];
-
-function fallbackCategoryNameBySlug(slug, idx) {
-  const normalized = String(slug || '').toLowerCase().trim();
-  const bySlug = STATIC_CATEGORY_FALLBACK.find((c) => (c.slug || '').toLowerCase() === normalized);
-  return bySlug?.name || STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.name || 'Collection';
-}
 
 // Stricter format: local part + @ + domain with at least one dot, sensible length
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
@@ -72,12 +65,8 @@ export default function Home() {
       shopCategories && shopCategories.length > 0
         ? shopCategories.map((cat, idx) => ({
             ...cat,
-            name: cleanCategoryName(cat.name, fallbackCategoryNameBySlug(cat.slug, idx)),
             image: cat.image || FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length],
-            tagline: cleanCaption(
-              [cat.tagline, cat.description],
-              STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.tagline || ''
-            ),
+            tagline: cat.tagline || cat.description || STATIC_CATEGORY_FALLBACK[idx % STATIC_CATEGORY_FALLBACK.length]?.tagline || '',
             overlay: cat.overlay ?? 'Trending',
           }))
         : STATIC_CATEGORY_FALLBACK.map((cat, idx) => ({

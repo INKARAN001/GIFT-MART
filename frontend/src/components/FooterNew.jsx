@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 export default function FooterNew() {
   return (
     <footer className="bg-slate-deep text-slate-300 py-16 px-6 lg:px-20 border-t border-white/5">
-      <div className="w-full max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="w-full max-w-[1400px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
         <div className="space-y-6">
           <Link to="/" className="flex items-center gap-3 text-white">
             <div className="size-8 bg-primary rounded-lg flex items-center justify-center">
@@ -30,19 +30,8 @@ export default function FooterNew() {
           <h5 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Quick Links</h5>
           <ul className="space-y-4 text-sm">
             <li><Link to="/about-us" className="hover:text-primary transition-colors">About Gift Mart</Link></li>
-            <li><Link to="/products" className="hover:text-primary transition-colors">Personalized Gifts</Link></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Corporate Gifting</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Anniversary Specials</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Birthday Bundles</a></li>
-          </ul>
-        </div>
-        <div>
-          <h5 className="text-white font-bold mb-6 uppercase tracking-wider text-xs">Customer Support</h5>
-          <ul className="space-y-4 text-sm">
-            <li><a href="#" className="hover:text-primary transition-colors">Track Your Order</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Shipping Policy</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">Returns &amp; Exchanges</a></li>
-            <li><a href="#" className="hover:text-primary transition-colors">FAQs</a></li>
+            <li><Link to="/track-order" className="hover:text-primary transition-colors">Track your order</Link></li>
+            <li><Link to="/feedback" className="hover:text-primary transition-colors">Send feedback</Link></li>
           </ul>
         </div>
         <div>
@@ -62,8 +51,8 @@ export default function FooterNew() {
       <div className="w-full max-w-[1400px] mx-auto mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-slate-500">
         <p>© {new Date().getFullYear()} GIFT MART. All rights reserved. Designed for the art of giving.</p>
         <div className="flex gap-6">
-          <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-          <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+          <Link to="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
+          <Link to="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</Link>
         </div>
       </div>
     </footer>

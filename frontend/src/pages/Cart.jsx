@@ -11,13 +11,10 @@ function formatLkr(amount) {
 }
 
 export default function Cart() {
-  const { user, fetchWithAuth } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const { items, subtotal, itemCount, loading, updateQuantity, removeItem, refreshCart } = useCart();
+  const { items, subtotal, itemCount, loading, updateQuantity, removeItem } = useCart();
   const [busyPid, setBusyPid] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('cod');
-  const [placingOrder, setPlacingOrder] = useState(false);
-  const [orderErr, setOrderErr] = useState('');
 
   if (loading) {
     return <div className="page-loading" style={{ minHeight: '50vh' }}>Loading cart…</div>;
@@ -263,64 +260,19 @@ export default function Cart() {
               </p>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem', minWidth: 'min(100%, 14rem)' }}>
-              {orderErr && (
-                <p style={{ margin: 0, fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>{orderErr}</p>
-              )}
-              {user && (
-                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                  <span style={{ display: 'block', fontWeight: 700, marginBottom: '0.35rem', color: '#475569' }}>Payment</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="pay"
-                      checked={paymentMethod === 'cod'}
-                      onChange={() => setPaymentMethod('cod')}
-                    />
-                    Cash on delivery
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                    <input
-                      type="radio"
-                      name="pay"
-                      checked={paymentMethod === 'card'}
-                      onChange={() => setPaymentMethod('card')}
-                    />
-                    Card (demo)
-                  </label>
-                </div>
-              )}
               {user ? (
                 <>
                   <button
                     type="button"
                     className="btn-primary"
-                    style={{ padding: '0.85rem 1.5rem', borderRadius: '0.75rem', fontWeight: 700, border: 'none', cursor: placingOrder ? 'wait' : 'pointer', alignSelf: 'stretch', opacity: placingOrder ? 0.85 : 1 }}
-                    disabled={placingOrder}
-                    onClick={async () => {
-                      setOrderErr('');
-                      setPlacingOrder(true);
-                      try {
-                        const r = await fetchWithAuth('/api/orders', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ paymentMethod })
-                        });
-                        const data = await r.json().catch(() => ({}));
-                        if (!r.ok) {
-                          setOrderErr(data.message || 'Could not place order.');
-                          return;
-                        }
-                        await refreshCart();
-                        navigate('/profile', { state: { ordersTab: true } });
-                      } catch {
-                        setOrderErr('Something went wrong. Please try again.');
-                      } finally {
-                        setPlacingOrder(false);
-                      }
-                    }}
+                    style={{ padding: '0.85rem 1.5rem', borderRadius: '0.75rem', fontWeight: 700, border: 'none', cursor: 'pointer', alignSelf: 'stretch' }}
+                    onClick={() => navigate('/checkout')}
                   >
-                    {placingOrder ? 'Placing order…' : 'Place order'}
+                    Proceed to checkout
                   </button>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.45 }}>
+                    You&apos;ll enter your delivery address and pay securely with a card on the next step.
+                  </p>
                   <button
                     type="button"
                     style={{ padding: '0.65rem 1rem', borderRadius: '0.75rem', fontWeight: 600, border: '1px solid #e2e8f0', background: '#fff', color: '#475569', cursor: 'pointer' }}

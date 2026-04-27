@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../styles/login.css';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 
-const API = '/api';
+const API = getApiBaseUrl();
 
 export default function ResetPassword() {
     const navigate = useNavigate();
@@ -42,12 +44,12 @@ export default function ResetPassword() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token, newPassword })
             });
-            const data = await res.json();
+            const data = await jsonFromResponse(res, {});
             if (res.ok) {
                 setSuccess('Password reset successfully! Redirecting to sign in...');
                 setTimeout(() => navigate('/login', { replace: true }), 2000);
             } else {
-                setError(data.message || 'Failed to reset password. The link may have expired.');
+                setError(data?.message || 'Failed to reset password. The link may have expired.');
             }
         } catch {
             setError('Network error. Please check your connection and try again.');

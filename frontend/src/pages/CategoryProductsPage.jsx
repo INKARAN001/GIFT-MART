@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/api';
 import ProductGrid from '../components/product/ProductGrid';
-import ProductModal from '../components/product/ProductModal';
 import Pagination from '../components/product/Pagination';
 import { displayCategoryLabel } from '../utils/categoryLabel';
 
@@ -16,11 +15,21 @@ export default function CategoryProductsPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [page, setPage] = useState(1);
-  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [expandedProductId, setExpandedProductId] = useState(null);
 
   useEffect(() => {
     setPage(1);
   }, [categorySlug]);
+
+  useEffect(() => {
+    setExpandedProductId(null);
+  }, [categorySlug, page]);
+
+  const handleProductCardClick = (product) => {
+    const id = product._id || product.id;
+    if (id == null) return;
+    setExpandedProductId((prev) => (prev != null && String(prev) === String(id) ? null : id));
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -110,8 +119,11 @@ export default function CategoryProductsPage() {
 
       {products.length > 0 ? (
         <>
-          <ProductGrid products={paginatedProducts} onProductClick={setSelectedProduct} />
-          {selectedProduct && <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+          <ProductGrid
+            products={paginatedProducts}
+            expandedProductId={expandedProductId}
+            onProductClick={handleProductCardClick}
+          />
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

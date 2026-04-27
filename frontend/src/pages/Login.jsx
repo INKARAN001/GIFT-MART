@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/login.css';
 
-const API = '/api';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
+
+const API = getApiBaseUrl();
 
 export default function Login() {
   const { login, register, verifyEmail, user } = useAuth();
@@ -49,7 +52,7 @@ export default function Login() {
 
   // redirect if already logged in — admin goes to /admin, others go home
   if (user) {
-    navigate(user.role === 'admin' ? '/admin' : '/', { replace: true });
+    navigate((user.role || '').toLowerCase() === 'admin' ? '/admin' : '/', { replace: true });
     return null;
   }
 
@@ -71,7 +74,7 @@ export default function Login() {
     setLoading(true);
     try {
       const data = await login(email, password);
-      navigate(data?.user?.role === 'admin' ? '/admin' : '/', { replace: true });
+      navigate((data?.user?.role || '').toLowerCase() === 'admin' ? '/admin' : '/', { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed');
     }
@@ -133,11 +136,11 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingVerifyEmail })
       });
-      const data = await res.json();
+      const data = await jsonFromResponse(res, {});
       if (res.ok) {
         setResendMsg('Code sent. Check your email.');
       } else {
-        setVerifyError(data.message || 'Could not resend code.');
+        setVerifyError(data?.message || 'Could not resend code.');
       }
     } catch {
       setVerifyError('Network error.');
@@ -155,11 +158,11 @@ export default function Login() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() })
       });
-      const data = await res.json();
-      if (res.ok && data.resetToken) {
+      const data = await jsonFromResponse(res, {});
+      if (res.ok && data?.resetToken) {
         navigate(`/reset-password?token=${data.resetToken}`);
       } else {
-        setForgotError(data.message || 'Something went wrong. Please try again.');
+        setForgotError(data?.message || 'Something went wrong. Please try again.');
       }
     } catch {
       setForgotError('Network error. Please check your connection and try again.');
@@ -233,7 +236,12 @@ export default function Login() {
 
                   <div className="checkbox-group">
                     <input id="terms" type="checkbox" required />
-                    <label htmlFor="terms">I agree to the <span className="underline">Terms & Conditions</span></label>
+                    <label htmlFor="terms">
+                      I agree to the{' '}
+                      <Link to="/terms-of-service" className="underline text-primary hover:opacity-90">
+                        Terms &amp; Conditions
+                      </Link>
+                    </label>
                   </div>
                   <button type="submit" className="submit-btn" disabled={loading}>
                     {loading ? 'Creating...' : 'Create Account'}

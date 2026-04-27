@@ -4,7 +4,6 @@ import api from '../api/api';
 import ProductSearchBar from '../components/product/ProductSearchBar';
 import ProductFilterPanel from '../components/product/ProductFilterPanel';
 import ProductGrid from '../components/product/ProductGrid';
-import ProductModal from '../components/product/ProductModal';
 import EmptyResultsState from '../components/product/EmptyResultsState';
 import ResultsSummary from '../components/product/ResultsSummary';
 import Pagination from '../components/product/Pagination';
@@ -13,6 +12,36 @@ import { filterMockProducts } from '../utils/productFilters';
 import { displayCategoryLabel } from '../utils/categoryLabel';
 
 const PAGE_SIZE = 12;
+
+function ProductGridSkeleton({ count = 8 }) {
+    return (
+        <div
+            style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                gap: '2rem',
+                width: '100%',
+                marginBottom: '4rem',
+            }}
+            aria-hidden
+        >
+            {Array.from({ length: count }, (_, i) => (
+                <div
+                    key={i}
+                    className="gm-card-surface"
+                    style={{ padding: 0, overflow: 'hidden', border: 'none' }}
+                >
+                    <div className="gm-skeleton" style={{ height: 200, width: '100%', borderRadius: 0 }} />
+                    <div style={{ padding: '1rem 1.1rem 1.25rem' }}>
+                        <div className="gm-skeleton" style={{ height: 20, width: '75%', marginBottom: '0.65rem' }} />
+                        <div className="gm-skeleton" style={{ height: 14, width: '40%', marginBottom: '0.75rem' }} />
+                        <div className="gm-skeleton" style={{ height: 36, width: '100%', borderRadius: 10 }} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
 
 function shuffleArray(arr) {
     const a = [...arr];
@@ -26,10 +55,10 @@ function shuffleArray(arr) {
 const ALL_MOCK_SHUFFLED = shuffleArray(mockProducts);
 
 export default function Products() {
-    const [products, setProducts] = useState(ALL_MOCK_SHUFFLED);
-    const [loading, setLoading] = useState(false);
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [selectedProduct, setSelectedProduct] = useState(null);
+    const [expandedProductId, setExpandedProductId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState({
         categories: [],
@@ -120,6 +149,16 @@ export default function Products() {
 
     useEffect(() => setPage(1), [searchTerm, filters]);
 
+    useEffect(() => {
+        setExpandedProductId(null);
+    }, [searchTerm, filters, currentPage]);
+
+    const handleProductCardClick = (product) => {
+        const id = product._id || product.id;
+        if (id == null) return;
+        setExpandedProductId((prev) => (prev != null && String(prev) === String(id) ? null : id));
+    };
+
     return (
         <div style={{ minHeight: '100vh' }}>
             <div className="relative">
@@ -208,12 +247,23 @@ export default function Products() {
                 </div>
 
                 <div style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
-                    <ResultsSummary totalResults={totalResults} searchTerm={searchTerm} />
+                    <ResultsSummary totalResults={loading ? 0 : totalResults} searchTerm={searchTerm} />
                     
-                    {products.length > 0 ? (
+                    {loading ? (
+                        <div aria-busy="true" aria-live="polite">
+                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                <span className="gm-spinner" style={{ width: 20, height: 20, borderWidth: 2 }} aria-hidden />
+                                Loading products…
+                            </p>
+                            <ProductGridSkeleton count={8} />
+                        </div>
+                    ) : products.length > 0 ? (
                         <>
-                            <ProductGrid products={paginatedProducts} onProductClick={setSelectedProduct} />
-                            {selectedProduct && <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />}
+                            <ProductGrid
+                                products={paginatedProducts}
+                                expandedProductId={expandedProductId}
+                                onProductClick={handleProductCardClick}
+                            />
                             <Pagination
                                 currentPage={currentPage}
                                 totalPages={totalPages}
@@ -222,8 +272,6 @@ export default function Products() {
                                 onPageChange={setPage}
                             />
                         </>
-                    ) : loading ? (
-                        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-muted)' }}>Searching...</div>
                     ) : (
                         <EmptyResultsState onClearFilters={handleClearFilters} searchTerm={searchTerm} />
                     )}

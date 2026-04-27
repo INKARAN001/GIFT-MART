@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getImageSrc } from '../utils/imageUrl';
+import { getApiBaseUrl } from '../utils/apiBase';
+import { jsonFromResponse } from '../utils/jsonResponse';
 
-const API = '/api';
+const API = getApiBaseUrl();
 
 export default function Wishlist() {
   const { fetchWithAuth } = useAuth();
@@ -25,8 +27,8 @@ export default function Wishlist() {
     try {
       const r = await fetchWithAuth(`${API}/wishlist`);
       if (r.ok) {
-        const data = await r.json();
-        setItems(data.items || []);
+        const data = await jsonFromResponse(r, { items: [] });
+        setItems(data?.items || []);
       }
     } catch { /* ignore */ }
     setLoading(false);
@@ -53,7 +55,7 @@ export default function Wishlist() {
         method: 'POST',
         body: JSON.stringify({ productId, quantity: 1 })
       });
-      const data = await r.json().catch(() => ({}));
+      const data = await jsonFromResponse(r, {});
       if (r.ok) {
         await refreshCart();
         await load();

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { FEATURES } from '../config/features';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -69,17 +70,20 @@ export default function Navbar() {
                 <Link to="/wishlist" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title="Wishlist" aria-label="Wishlist">
                   <span className="material-symbols-outlined" style={{ fontVariationSettings: '"FILL" 0' }}>favorite</span>
                 </Link>
-                <Link to="/reminders" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title="Reminders" aria-label="Reminders">
-                  <span className="material-symbols-outlined">notifications</span>
-                </Link>
-                {user.role === 'admin' && (
+                {FEATURES.REMINDERS && (
+                  <Link to="/reminders" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title="Reminders" aria-label="Reminders">
+                    <span className="material-symbols-outlined">notifications</span>
+                  </Link>
+                )}
+                {(user.role || '').toLowerCase() === 'admin' && (
                   <Link
                     to="/admin"
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-primary dark:text-primary"
+                    className="flex items-center gap-1 sm:gap-1.5 px-2 py-1.5 sm:pr-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-primary dark:text-primary"
                     title="Admin panel"
                     aria-label="Admin panel"
                   >
-                    <span className="material-symbols-outlined">admin_panel_settings</span>
+                    <span className="material-symbols-outlined text-xl sm:text-[22px]">admin_panel_settings</span>
+                    <span className="hidden sm:inline text-sm font-semibold">Admin</span>
                   </Link>
                 )}
                 <Link to="/profile" className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-700 dark:text-slate-300" title={user.name || user.email}>
