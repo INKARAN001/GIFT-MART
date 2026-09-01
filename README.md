@@ -1,230 +1,679 @@
-# Gift Mart
+# 🎁 Gift Mart - E-Commerce Platform
 
-## Overview
+A modern full-stack e-commerce platform for curated gifts with secure payments, real-time order tracking, and admin dashboard.
 
-Gift Mart is a full-stack e-commerce web app for curated gifts. It lets customers browse products, manage a cart and wishlist, pay securely with a card (Stripe), and track orders. It also supports event reminders, newsletter signup with email verification, and an admin area for catalog and orders.
+![GitHub](https://img.shields.io/badge/GitHub-INKARAN001%2FGIFT--MART-blue?logo=github)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Status](https://img.shields.io/badge/Status-Active-success)
 
-**What problem does it solve?**  
-It provides a single place to discover gifts, complete checkout with transparent fees (merchandise + distance-based shipping from a Jaffna hub), and stay engaged via reminders and promotions.
-
-**Repository:** [github.com/INKARAN001/GIFT-MART](https://github.com/INKARAN001/GIFT-MART) — `git clone https://github.com/INKARAN001/GIFT-MART.git`
-
-**Sprint 4 planning:** See [`SPRINT_4_PLAN.md`](SPRINT_4_PLAN.md) (timeline, story order, integration gates, demo script link). **Risks & mitigations:** [`docs/SPRINT_4_RISKS.md`](docs/SPRINT_4_RISKS.md).
+**Live Demo:** _(Add your production URL here)_  
+**Repository:** [github.com/INKARAN001/GIFT-MART](https://github.com/INKARAN001/GIFT-MART)
 
 ---
 
-## Documentation index
+## 📋 Table of Contents
 
-| Doc | Purpose |
-|-----|---------|
-| [`SPRINT_4_PLAN.md`](SPRINT_4_PLAN.md) | Sprint timeline, US ownership, Git workflow, scope rules |
-| [`docs/SPRINT_4_RISKS.md`](docs/SPRINT_4_RISKS.md) | Sprint killers: API/Stripe mismatch, idempotency, per-US risks, AI tooling limits |
-| [`docs/API_ORDERS.md`](docs/API_ORDERS.md) | `POST /api/orders` and `POST /api/orders/recover` — **freeze before integration** |
-| [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md) | Daily regression / demo steps |
-| [`docs/STRIPE_TESTING.md`](docs/STRIPE_TESTING.md) | Stripe test cards (success + decline) |
-| [`docs/api.http`](docs/api.http) | REST Client smoke requests (health, auth, orders) |
-| [`docs/USER_FLOWS_AND_IMPACT.md`](docs/USER_FLOWS_AND_IMPACT.md) | User journeys, backend steps, deploy/env impact |
-| [`frontend/.env.example`](frontend/.env.example) | Vite env template |
-| [`backend-java/.env.example`](backend-java/.env.example) | Backend env reference (Render/shell; Spring does not auto-load `.env`) |
-| [`backend-java/README.md`](backend-java/README.md) | API-specific quick start |
-
----
-
-## API contracts & integration
-
-Place-order and recover payloads are documented in [`docs/API_ORDERS.md`](docs/API_ORDERS.md). Lock this contract before the main integration day (target **13 Apr 2026** EOD).
-
-**Stripe:** Use **test** keys only during development. Verify **success** (`4242…4242`) and **decline** (`4000…0002`) paths per [`docs/STRIPE_TESTING.md`](docs/STRIPE_TESTING.md) — not on demo day for the first time.
-
-### Feature flags (`FEATURES`)
-
-Kill switches live in [`frontend/src/config/features.js`](frontend/src/config/features.js): `FEATURES.REVIEWS`, `FEATURES.REMINDERS`, `FEATURES.PROMOS`, `FEATURES.ADMIN_STATS`. Set matching `VITE_ENABLE_*` to `"false"` in `frontend/.env` to disable UI without code changes.
-
-| Variable | When `"false"` |
-|----------|------------------|
-| `VITE_ENABLE_REVIEWS` | Hides product review UI |
-| `VITE_ENABLE_REMINDERS` | Hides `/reminders` and navbar bell |
-| `VITE_ENABLE_PROMOS` | Hides promotional email checkbox in profile |
-| `VITE_ENABLE_ADMIN_STATS` | Skips `GET /api/admin/stats` for admin dashboard order/revenue figures |
-
-**Demo priority:** checkout → profile orders → reviews. Optional: reminders, promos, heavy admin stats — see [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
-
-### Environment templates
-
-| File | Role |
-|------|------|
-| [`frontend/.env.example`](frontend/.env.example) | `VITE_API_BASE_URL`, Stripe publishable key, Maps key, feature flags |
-| [`backend-java/.env.example`](backend-java/.env.example) | Reference for MongoDB, JWT, Stripe, `GOOGLE_MAPS_API_KEY`, `FRONTEND_URL`, `SPRING_PROFILES_ACTIVE` |
-
-**Spring profiles:** `application-dev.properties` / `application-prod.properties` under `backend-java/src/main/resources/`. Default profile is **`dev`** (`spring.profiles.active=${SPRING_PROFILES_ACTIVE:dev}`). On Render, set **`SPRING_PROFILES_ACTIVE=prod`**.
-
-**Quick API checks:** [`docs/api.http`](docs/api.http).
-
-**End-to-end behavior (checkout, CORS, fallbacks):** [`docs/USER_FLOWS_AND_IMPACT.md`](docs/USER_FLOWS_AND_IMPACT.md).
-
-### Production frontend (e.g. Vercel)
-
-- Set **`VITE_API_BASE_URL`** to your API **origin including `/api`**, e.g. `https://your-service.onrender.com/api`. The app uses [`getApiBaseUrl()`](frontend/src/utils/apiBase.js) so all `fetch` / `fetchWithAuth` calls target the deployed API (dev relies on relative `/api` + Vite proxy).
-- Set backend **`FRONTEND_URL`** to your site origin (comma-separated for multiple previews). **CORS** is required — misconfiguration shows as blocked requests in the browser console, not on the server alone.
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation & Setup](#installation--setup)
+- [Environment Configuration](#environment-configuration)
+- [Running the Project](#running-the-project)
+- [API Documentation](#api-documentation)
+- [Database Schema](#database-schema)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Support](#support)
 
 ---
 
-## Tech stack
+## 📖 Overview
 
-| Layer | Technologies |
-|--------|----------------|
-| **Frontend** | React 18, Vite 5, React Router, Tailwind CSS, Axios, Stripe.js, Google Maps (`@react-google-maps/api`), Swiper |
-| **Backend** | Java 17, Spring Boot 3.2, Spring Security (JWT), Spring Data MongoDB, Spring Mail, Stripe Java SDK |
-| **Database** | MongoDB |
+**Gift Mart** is a full-stack e-commerce web application designed to provide a seamless shopping experience for curated gift products.
 
-## Features
+### Problem Statement
+Users need a single, unified platform to:
+- Discover and browse curated gift products
+- Manage shopping cart and wishlist
+- Complete secure checkout with transparent pricing
+- Track orders in real-time
+- Stay engaged through reminders and promotions
 
-- **Auth** — Register, login, JWT sessions, email verification on signup, password reset flow
-- **Catalog** — Products, categories, search, product detail, reviews (toggle via `FEATURES.REVIEWS`)
-- **Shopping** — Cart, wishlist, stock-aware checkout
-- **Payments** — Card checkout via **Stripe** PaymentIntent; totals = items + **2% merchandise fee** + **distance-based shipping** from Jaffna hub
-- **Shipping** — Map pin / live location / full address; optional Google Maps; fallbacks if Distance Matrix fails (`giftmart.shipping.*` in `application.properties`)
-- **Amount calculator** — `/amount-calculator` for fee preview
-- **Newsletter** — Subscribe with email verification (Gmail SMTP when configured)
-- **Reminders** — Event reminders (toggle via `FEATURES.REMINDERS`)
-- **Profile** — Orders, address, notification preferences (promo UI toggle via `FEATURES.PROMOS`)
-- **Admin** — Catalog, users, reviews; dashboard stats optional via `FEATURES.ADMIN_STATS`
-
----
-
-## Deployment
-
-**Live URL:** _(add your production link)_
-
-### Backend on [Render](https://render.com)
-
-Docker: `backend-java/Dockerfile`, blueprint: `render.yaml`.
-
-1. Connect repo [INKARAN001/GIFT-MART](https://github.com/INKARAN001/GIFT-MART).
-2. **New → Blueprint** (or Web Service: Docker, context `backend-java`).
-3. **Environment** (minimum):
-
-   | Variable | Notes |
-   |----------|--------|
-   | `MONGODB_URI` | e.g. MongoDB Atlas |
-   | `JWT_SECRET` | Long random string |
-   | `FRONTEND_URL` | Deployed frontend origin (CORS) |
-   | `STRIPE_SECRET_KEY` | Stripe secret |
-   | `STRIPE_CHARGE_CURRENCY` | e.g. `usd` |
-   | `STRIPE_LKR_PER_USD` | LKR per 1 USD if charging in USD |
-   | `GOOGLE_MAPS_API_KEY` | Optional |
-   | `SPRING_MAIL_USERNAME` / `SPRING_MAIL_PASSWORD` | Optional mail |
-   | `SPRING_PROFILES_ACTIVE` | Set **`prod`** for production profile |
-
-4. Frontend production build: set **`VITE_API_BASE_URL`** to the API root including `/api`, e.g. `https://your-api.onrender.com/api` (see `frontend/.env.example`).
-
-Health check: **`GET /api/health`**. Free tiers may cold-start.
-
-### Frontend
-
-Deploy the Vite build (Vercel, Netlify, Cloudflare Pages, etc.) with the same env vars as production (Stripe publishable key, Maps key, `VITE_API_BASE_URL`, feature flags as needed).
+### Solution
+Gift Mart provides:
+- ✅ Complete product catalog with search and filtering
+- ✅ Secure Stripe payment integration
+- ✅ Real-time order tracking with map visualization
+- ✅ Distance-based shipping from a central hub (Jaffna)
+- ✅ Event reminders and newsletter management
+- ✅ Admin dashboard for inventory and order management
+- ✅ User profiles with order history and preferences
 
 ---
 
-## Screenshots
+## ✨ Features
 
-_Add under `docs/screenshots/` and embed here if desired._
+### 👥 User Features
+- **Authentication & Security**
+  - User registration and login
+  - Email verification
+  - Password reset flow
+  - JWT-based session management
+
+- **Shopping Experience**
+  - Browse products by category
+  - Full-text search
+  - Product filters and sorting
+  - Detailed product views with reviews
+  - Add to cart / wishlist
+  - Stock management
+
+- **Checkout & Payment**
+  - Multi-step checkout process
+  - Address validation (SL-specific)
+  - Distance-based shipping calculation
+  - Transparent fee breakdown (merchandise + shipping + 2% fee)
+  - Secure Stripe payment integration
+  - Order confirmation with invoice
+
+- **Order Tracking**
+  - Real-time order status updates
+  - Google Maps integration for delivery tracking
+  - Order history in user profile
+  - Invoice download (PDF)
+
+- **Engagement**
+  - Event reminders with email notifications
+  - Newsletter subscription
+  - Product reviews and ratings
+  - Personalized recommendations
+
+### 🛠️ Admin Features
+- **Catalog Management**
+  - Add/edit/delete products
+  - Manage categories
+  - Upload product images
+  - View product reviews
+
+- **Order Management**
+  - View all orders
+  - Update order status
+  - Track payments
+  - Generate reports
+
+- **User Management**
+  - View customer profiles
+  - Manage user accounts
+  - View user activity
+
+- **Analytics** (Optional)
+  - Dashboard statistics
+  - Order and revenue charts
+  - Customer insights
 
 ---
 
-## Setup (run locally)
+## 🛠️ Tech Stack
 
-### Prerequisites
+### **Frontend**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **React** | 18.x | UI framework |
+| **Vite** | 5.x | Build tool & dev server |
+| **React Router** | 6.x | Client-side routing |
+| **Tailwind CSS** | 3.x | Styling & layout |
+| **Axios** | 1.x | HTTP client |
+| **Stripe.js** | 9.x | Payment processing UI |
+| **Google Maps API** | Latest | Order tracking & shipping |
+| **Swiper** | 12.x | Image carousels |
+| **jsPDF** | 4.x | PDF invoice generation |
 
-- **Java 17+**, **Maven 3.6+**
-- **Node.js 18+**, **npm**
-- **MongoDB** local (`mongodb://localhost:27017/gift-mart`) or Atlas
+### **Backend**
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| **Java** | 17+ | Language |
+| **Spring Boot** | 3.2 | Framework |
+| **Spring Security** | - | JWT authentication |
+| **Spring Data MongoDB** | - | Database ORM |
+| **Spring Mail** | - | Email notifications |
+| **Stripe Java SDK** | Latest | Payment processing |
+| **Maven** | 3.6+ | Dependency management |
 
-### 1. Clone
+### **Database & Services**
+| Service | Purpose |
+|---------|---------|
+| **MongoDB** | NoSQL database (Atlas or local) |
+| **Stripe** | Payment processing |
+| **Google Maps** | Location & distance calculation |
+| **Gmail SMTP** | Email notifications |
+| **Render** | Backend hosting (optional) |
+| **Vercel** | Frontend hosting (optional) |
+
+---
+
+## 📁 Project Structure
+
+```
+GIFT-MART/
+├── frontend/                          # React.js Frontend
+│   ├── public/
+│   │   ├── photos/                   # Product images
+│   │   ├── logo.png
+│   │   └── placeholder-gift.svg
+│   ├── src/
+│   │   ├── api/                      # API integration
+│   │   ├── components/               # Reusable UI components
+│   │   │   ├── home/
+│   │   │   ├── product/
+│   │   │   ├── Navbar.jsx
+│   │   │   ├── Layout.jsx
+│   │   │   └── ...
+│   │   ├── pages/                    # Page components
+│   │   │   ├── Home.jsx
+│   │   │   ├── ProductDetail.jsx
+│   │   │   ├── Checkout.jsx
+│   │   │   ├── Cart.jsx
+│   │   │   ├── Profile.jsx
+│   │   │   ├── admin/
+│   │   │   └── ...
+│   │   ├── config/                   # Configuration
+│   │   │   ├── features.js           # Feature flags
+│   │   │   └── constants.js
+│   │   ├── context/                  # React Context
+│   │   ├── styles/                   # Global styles
+│   │   ├── utils/                    # Utility functions
+│   │   ├── App.jsx                   # Main app component
+│   │   └── main.jsx                  # Entry point
+│   ├── .env.example                  # Environment variables template
+│   ├── package.json
+│   ├── vite.config.js
+│   └── tailwind.config.js
+│
+├── backend-java/                      # Spring Boot Backend
+│   ├── src/main/java/com/giftmart/
+│   │   ├── config/                   # Spring configuration
+│   │   │   ├── CorsConfig.java
+│   │   │   ├── SecurityConfig.java
+│   │   │   ├── HttpClientConfig.java
+│   │   │   └── ...
+│   │   ├── controller/               # API endpoints
+│   │   │   ├── AuthController.java
+│   │   │   ├── ProductController.java
+│   │   │   ├── OrderController.java
+│   │   │   ├── AdminController.java
+│   │   │   └── ...
+│   │   ├── service/                  # Business logic
+│   │   │   ├── AuthService.java
+│   │   │   ├── OrderService.java
+│   │   │   ├── StripePaymentService.java
+│   │   │   ├── OrderDeliveryScheduler.java
+│   │   │   └── ...
+│   │   ├── repository/               # Data access layer
+│   │   │   ├── UserRepository.java
+│   │   │   ├── ProductRepository.java
+│   │   │   ├── OrderRepository.java
+│   │   │   └── ...
+│   │   ├── document/                 # MongoDB documents
+│   │   │   ├── User.java
+│   │   │   ├── Product.java
+│   │   │   ├── Order.java
+│   │   │   └── ...
+│   │   ├── dto/                      # Data transfer objects
+│   │   ├── security/                 # JWT & security
+│   │   │   └── JwtAuthFilter.java
+│   │   ├── util/                     # Utilities
+│   │   └── GiftMartApplication.java  # Main class
+│   ├── src/main/resources/
+│   │   ├── application.properties    # Default config
+│   │   ├── application-dev.properties
+│   │   ├── application-prod.properties
+│   │   └── application-local.properties.example
+│   ├── pom.xml                       # Maven dependencies
+│   ├── Dockerfile                    # Docker configuration
+│   ├── mvnw / mvnw.cmd              # Maven wrapper
+│   └── README.md
+│
+├── docs/                              # Project documentation
+│   ├── API_ORDERS.md
+│   ├── DEMO_SCRIPT.md
+│   ├── STRIPE_TESTING.md
+│   ├── USER_FLOWS_AND_IMPACT.md
+│   └── api.http                      # REST Client requests
+│
+├── .gitignore
+├── README.md                          # This file
+├── render.yaml                        # Render deployment config
+└── SPRINT_4_PLAN.md                  # Project planning
+```
+
+---
+
+## 🔧 Prerequisites
+
+### System Requirements
+- **Node.js** 16.x or higher (for frontend)
+- **Java** 17 or higher (for backend)
+- **Maven** 3.6 or higher (for backend)
+- **MongoDB** 5.0+ (local or Atlas cloud)
+- **Git** for version control
+
+### Required API Keys
+- **Stripe** account (test & production keys)
+- **Google Maps** API key (for location features)
+- **Gmail** account (for email notifications - optional)
+
+### Recommended Tools
+- VS Code with extensions: Prettier, ES7+ React/Redux snippets
+- Postman or REST Client for API testing
+- MongoDB Compass (MongoDB GUI)
+
+---
+
+## 📦 Installation & Setup
+
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/INKARAN001/GIFT-MART.git
 cd GIFT-MART
 ```
 
-### 2. Backend (`backend-java`)
+### 2. Backend Setup (Java/Spring Boot)
 
-Copy env ideas from [`backend-java/.env.example`](backend-java/.env.example). For local secrets, prefer **`application-local.properties`** (see [`backend-java/src/main/resources/application-local.properties.example`](backend-java/src/main/resources/application-local.properties.example)) or export `MONGODB_URI`, `JWT_SECRET`, `STRIPE_SECRET_KEY`, etc.
+```bash
+cd backend-java
 
+# Copy environment variables template
+cp src/main/resources/application-local.properties.example src/main/resources/application-local.properties
+
+# Edit application-local.properties with your configuration
+# (See Environment Configuration section below)
+
+# Build the project
+mvn clean install
+
+# Run the application
+mvn spring-boot:run
+```
+
+The backend will start at **http://localhost:5000**
+
+### 3. Frontend Setup (React)
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Copy environment variables template
+cp .env.example .env.local
+
+# Edit .env.local with your configuration
+# (See Environment Configuration section below)
+
+# Start development server
+npm run dev
+```
+
+The frontend will start at **http://localhost:5173**
+
+---
+
+## 🔐 Environment Configuration
+
+### Frontend (.env.local)
+
+```env
+# API Configuration
+VITE_API_BASE_URL=http://localhost:5000/api
+
+# Stripe Configuration
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_xxxxxxxxxxxx
+
+# Google Maps Configuration
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyxxxxxxxxxxxxxxxxx
+
+# Feature Flags (set to "true" to enable, "false" to disable)
+VITE_ENABLE_REVIEWS=true
+VITE_ENABLE_REMINDERS=true
+VITE_ENABLE_PROMOS=true
+VITE_ENABLE_ADMIN_STATS=true
+```
+
+### Backend (application-local.properties)
+
+```properties
+# Spring Boot
+spring.application.name=gift-mart-api
+server.port=5000
+
+# MongoDB
+spring.data.mongodb.uri=mongodb://localhost:27017/gift-mart
+# OR for MongoDB Atlas:
+# spring.data.mongodb.uri=mongodb+srv://username:password@cluster.mongodb.net/gift-mart
+
+# JWT Configuration
+jwt.secret=your_long_random_secret_key_here
+jwt.expiration=86400000
+
+# Stripe Configuration
+stripe.api.key=sk_test_xxxxxxxxxxxx
+
+# Google Maps
+google.maps.api.key=AIzaSyxxxxxxxxxxxxxxxxx
+
+# Email Configuration (Gmail SMTP)
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=your-email@gmail.com
+spring.mail.password=your-app-password
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+# Frontend URL (for CORS)
+frontend.url=http://localhost:3000
+
+# Shipping Configuration
+giftmart.shipping.hub.latitude=6.927
+giftmart.shipping.hub.longitude=80.771
+```
+
+---
+
+## ▶️ Running the Project
+
+### Development Mode
+
+**Terminal 1 - Backend:**
 ```bash
 cd backend-java
 mvn spring-boot:run
 ```
 
-API: **http://localhost:5000** (default; Render uses `PORT`). Optional: `run-with-mail.ps1` on Windows.
-
-Details: [`backend-java/README.md`](backend-java/README.md).
-
-### 3. Frontend (`frontend`)
-
+**Terminal 2 - Frontend:**
 ```bash
 cd frontend
-npm install
-cp .env.example .env   # then edit: Stripe publishable key, optional Maps key
 npm run dev
 ```
 
-Dev server: **http://localhost:3000** (see `frontend/vite.config.js`). Requests to **`/api`** proxy to **localhost:5000**.
+Then open **http://localhost:5173** in your browser.
 
-Production: `npm run build` → `npm run preview` to test `dist/`.
+### Test Credentials
 
-### 4. Default admin (empty DB seed)
+**Admin Account:**
+- Email: `admin@giftmart.com`
+- Password: `admin123`
 
-- Email: `admin@giftmart.com`  
-- Password: `admin123`  
-
-Change in production.
-
-### 5. Stripe & Maps
-
-- Use **matching** test publishable + secret keys.
-- Google Maps: billing may be required on GCP for Maps / Distance Matrix / Geocoding.
+**Stripe Test Cards:**
+- Success: `4242 4242 4242 4242`
+- Decline: `4000 0000 0000 0002`
+- Any future date & any CVC
 
 ---
 
-## Repository layout
+## 📡 API Documentation
 
+### Base URL
 ```
-GIFT-MART/
-├── README.md                 # This file
-├── SPRINT_4_PLAN.md          # Sprint 4 plan
-├── render.yaml               # Render blueprint
-├── .gitignore                # Root ignores (dist, node_modules, target, .env, …)
-├── docs/
-│   ├── API_ORDERS.md         # Checkout API contract
-│   ├── SPRINT_4_RISKS.md     # Sprint 4 risk register (integration, Stripe, AI tooling)
-│   ├── DEMO_SCRIPT.md        # Demo / daily script
-│   ├── STRIPE_TESTING.md     # Test cards
-│   ├── USER_FLOWS_AND_IMPACT.md  # Flows + backend + impact
-│   └── api.http              # HTTP smoke file
-├── frontend/
-│   ├── .env.example
-│   ├── src/
-│   │   ├── config/features.js
-│   │   ├── pages/
-│   │   └── …
-│   └── public/photos/        # Product images (source of truth for galleries)
-└── backend-java/
-    ├── .env.example
-    ├── Dockerfile
-    ├── pom.xml
-    └── src/main/
-        ├── java/com/giftmart/
-        └── resources/
-            ├── application.properties
-            ├── application-dev.properties
-            └── application-prod.properties
+http://localhost:5000/api
 ```
 
-**Do not commit:** `frontend/node_modules/`, `frontend/dist/`, `backend-java/target/`, `backend-java/uploads/`, secrets in `.env` / `application-local.properties` (see `.gitignore`).
+### Core Endpoints
+
+#### Authentication
+```
+POST   /api/auth/register         - Register new user
+POST   /api/auth/login            - Login user
+GET    /api/auth/me               - Get current user
+POST   /api/auth/refresh          - Refresh JWT token
+POST   /api/auth/reset-password   - Reset password
+```
+
+#### Products
+```
+GET    /api/products              - Get all products (paginated)
+GET    /api/products/:id          - Get product details
+GET    /api/products/categories   - Get all categories
+GET    /api/search?q=...          - Search products
+```
+
+#### Cart & Checkout
+```
+GET    /api/cart                  - Get user's cart
+POST   /api/cart/items            - Add item to cart
+PUT    /api/cart/items/:id        - Update cart item
+DELETE /api/cart/items/:id        - Remove from cart
+GET    /api/amount-calculator     - Calculate order total
+```
+
+#### Orders
+```
+POST   /api/orders                - Create new order
+GET    /api/orders/:id            - Get order details
+GET    /api/users/orders          - Get user's order history
+PUT    /api/orders/:id/status     - Update order status
+```
+
+#### Reviews
+```
+GET    /api/reviews/product/:id   - Get product reviews
+POST   /api/reviews               - Create review
+PUT    /api/reviews/:id           - Update review
+```
+
+#### Admin
+```
+GET    /api/admin/products        - Manage products
+POST   /api/admin/products        - Add product
+PUT    /api/admin/products/:id    - Edit product
+DELETE /api/admin/products/:id    - Delete product
+GET    /api/admin/orders          - View all orders
+GET    /api/admin/users           - View all users
+GET    /api/admin/stats           - Dashboard statistics
+```
+
+See **[docs/api.http](docs/api.http)** for detailed request examples.
 
 ---
 
-## License
+## 💾 Database Schema
 
-_Add your license (e.g. MIT, or coursework notice)._
+### Collections
+
+#### Users
+```javascript
+{
+  _id: ObjectId,
+  email: String (unique),
+  password: String (hashed),
+  firstName: String,
+  lastName: String,
+  phone: String,
+  addresses: [{
+    _id: ObjectId,
+    street: String,
+    city: String,
+    postal: String,
+    latitude: Number,
+    longitude: Number
+  }],
+  preferences: {
+    receivePromos: Boolean,
+    receiveReminders: Boolean
+  },
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+#### Products
+```javascript
+{
+  _id: ObjectId,
+  name: String,
+  slug: String (unique),
+  description: String,
+  price: Number,
+  category: String,
+  images: [String],
+  stock: Number,
+  rating: Number,
+  reviews: [ObjectId],
+  createdAt: Date
+}
+```
+
+#### Orders
+```javascript
+{
+  _id: ObjectId,
+  userId: ObjectId,
+  items: [{
+    productId: ObjectId,
+    quantity: Number,
+    price: Number
+  }],
+  subtotal: Number,
+  shippingFee: Number,
+  serviceFee: Number,
+  total: Number,
+  status: String (pending, confirmed, shipped, delivered),
+  payment: {
+    method: String (card, cod),
+    stripeId: String,
+    status: String (pending, succeeded, failed)
+  },
+  shipping: {
+    address: Object,
+    distance: Number,
+    estimatedDate: Date
+  },
+  createdAt: Date
+}
+```
+
+---
+
+## 🚀 Deployment
+
+### Backend Deployment (Render)
+
+1. **Create Render Account**
+   - Go to [render.com](https://render.com)
+   - Connect your GitHub repository
+
+2. **Deploy Backend**
+   - Create new Web Service
+   - Select repository: `GIFT-MART`
+   - Build command: `mvn clean install`
+   - Start command: `java -jar target/gift-mart-api-1.0.0.jar`
+   - Set environment variables (see `render.yaml`)
+
+3. **Set Environment Variables in Render:**
+   ```
+   SPRING_PROFILES_ACTIVE=prod
+   MONGODB_URI=mongodb+srv://...
+   JWT_SECRET=your_secret_key
+   STRIPE_API_KEY=sk_live_xxxxx
+   GOOGLE_MAPS_API_KEY=xxxxx
+   FRONTEND_URL=https://your-frontend-url.com
+   ```
+
+### Frontend Deployment (Vercel)
+
+1. **Create Vercel Account**
+   - Go to [vercel.com](https://vercel.com)
+   - Connect your GitHub repository
+
+2. **Deploy Frontend**
+   - Select `frontend` folder
+   - Set environment variables:
+     ```
+     VITE_API_BASE_URL=https://your-backend.onrender.com/api
+     VITE_STRIPE_PUBLISHABLE_KEY=pk_live_xxxxx
+     VITE_GOOGLE_MAPS_API_KEY=xxxxx
+     ```
+
+3. **Deploy**
+   - Vercel auto-deploys on git push
+
+See **[render.yaml](render.yaml)** for Render configuration details.
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please follow these guidelines:
+
+### Setup Development Environment
+1. Fork the repository
+2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/GIFT-MART.git`
+3. Create a branch: `git checkout -b feature/your-feature`
+4. Follow the setup instructions above
+
+### Code Style
+- Use consistent indentation (2 spaces for frontend, 4 for backend)
+- Follow existing naming conventions
+- Write descriptive commit messages
+- Add comments for complex logic
+
+### Testing
+- Test your changes thoroughly before submitting PR
+- Test both frontend and backend changes
+- Verify payment flows with Stripe test cards
+
+### Submitting Changes
+1. Commit your changes: `git commit -m "feat: description of changes"`
+2. Push to your fork: `git push origin feature/your-feature`
+3. Create Pull Request with detailed description
+4. Ensure CI/CD checks pass
+
+### Reporting Issues
+- Check existing issues first
+- Provide clear description and reproduction steps
+- Include error messages and screenshots
+- Specify your environment (OS, Node version, etc.)
+
+---
+
+## 📄 License
+
+This project is licensed under the **MIT License** - see the LICENSE file for details.
+
+---
+
+## 📞 Support
+
+### Documentation
+- **Main README**: [README.md](README.md)
+- **Backend API**: [backend-java/README.md](backend-java/README.md)
+- **API Contracts**: [docs/API_ORDERS.md](docs/API_ORDERS.md)
+- **Deployment Guide**: [render.yaml](render.yaml)
+- **Feature Flags**: [frontend/src/config/features.js](frontend/src/config/features.js)
+
+### Getting Help
+1. Check the documentation files above
+2. Review existing GitHub issues
+3. Check Stripe testing guide: [docs/STRIPE_TESTING.md](docs/STRIPE_TESTING.md)
+4. For API testing: [docs/api.http](docs/api.http)
+
+### Contact
+- **Issues**: Use GitHub Issues for bug reports and feature requests
+- **Discussions**: Use GitHub Discussions for questions
+
+---
+
+## 🙏 Acknowledgments
+
+- Gift Mart team and contributors
+- Stripe for payment processing
+- Google Maps for location services
+- React, Spring Boot, and MongoDB communities
+
+---
+
+**Made with ❤️ by the Gift Mart Team**
