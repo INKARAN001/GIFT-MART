@@ -6,7 +6,6 @@ A modern full-stack e-commerce platform for curated gifts with secure payments, 
 ![License](https://img.shields.io/badge/License-MIT-green)
 ![Status](https://img.shields.io/badge/Status-Active-success)
 
-**Live Demo:** _(Add your production URL here)_  
 **Repository:** [github.com/INKARAN001/GIFT-MART](https://github.com/INKARAN001/GIFT-MART)
 
 ---
